@@ -27,6 +27,9 @@ public class Network {
      */
     SortedSet<Node> allNodes = new TreeSet<>();
 
+    Node root;
+
+
     /**
      * Creates a new graph
      *
@@ -35,8 +38,8 @@ public class Network {
      */
     public Network(final IP root, final List<IP> children) throws ParseException {
         if (children.isEmpty()) throw new RuntimeException();
-        Node parent = new Node(root, convertToNode(children));
-        network.add(parent);
+        this.root = new Node(root, convertToNode(children));
+        network.add(this.root);
         updateAllNodes(network);
     }
 
@@ -48,7 +51,8 @@ public class Network {
     public Network(final String bracketNotation) throws ParseException {
         if (bracketNotation == null || bracketNotation.split(" ").length <= 1)
             throw new ParseException("Invalid bracket notation");
-        network.add(AddressParser.bracketParser(bracketNotation));
+        root = AddressParser.bracketParser(bracketNotation);
+        network.add(root);
         updateAllNodes(network);
         if (isCircular(network.get(0), allNodes))
             throw new ParseException("ERROR: Circular Tree");
@@ -113,6 +117,27 @@ public class Network {
     }
 
     /**
+     * Helper methode for {@link #toString(IP)}
+     *
+     * @param root root IP but as Node
+     * @return full bracket notation as string
+     */
+    public StringBuilder buildBracketNotation(Node root) {
+        StringBuilder bracketNotation = new StringBuilder();
+        if (!root.getChildren().isEmpty()) {
+
+            for (Node child : root.getChildren()) {
+                bracketNotation.append(buildBracketNotation(child));
+            }
+            bracketNotation.insert(0, " (" + root.getAddress().toString()).append(")");
+        } else {
+            bracketNotation.append(" ").append(root.getAddress().toString());
+        }
+        return bracketNotation;
+    }
+
+
+    /**
      * Methode that converts a list of IP's to a list of Node's
      *
      * @param children list of children of the root
@@ -157,23 +182,39 @@ public class Network {
         throw new RuntimeException();
     }
 
-    /**
-     * Helper methode for {@link #toString(IP)}
-     *
-     * @param root root IP but as Node
-     * @return full bracket notation as string
-     */
-    public StringBuilder buildBracketNotation(Node root) {
-        StringBuilder bracketNotation = new StringBuilder();
-        if (!root.getChildren().isEmpty()) {
+    public void changeRoot(IP newRoot, Node newParent) {
+        Node node = getAsNode(newRoot);
 
-            for (Node child : root.getChildren()) {
-                bracketNotation.append(buildBracketNotation(child));
-            }
-            bracketNotation.insert(0, " (" + root.getAddress().toString()).append(")");
+        // TODO: change children of new root
+        //TODO: change children and parent of its prior parent
+        //TODO: do it for every node till last root
+
+        if (newParent == null) {
+            changeRoot(node.getParent().getAddress(), node);
+            node.getChildren().add(node.getParent());
+            node.setParent(newParent);
+        } else if (node.getParent() == null) {
+            node.getChildren().remove(newParent);
+            node.setParent(newParent);
         } else {
-            bracketNotation.append(" ").append(root.getAddress().toString());
+            changeRoot(node.getParent().getAddress(), node);
+            node.getChildren().add(node.getParent());
+            node.getChildren().remove(newParent);
+            node.setParent(newParent);
         }
-        return bracketNotation;
+        if (node.getParent() == null) {
+            network.remove(root);
+            root = node;
+            network.add(root);
+        }
     }
+
+    /**
+     * @param node an IP-Address
+     * @return IP-Address as its node
+     */
+    public Node getAsNode(IP node) {
+        return allNodes.stream().filter(x -> x.getAddress().compareTo(node) == 0).findFirst().orElse(null);
+    }
+
 }

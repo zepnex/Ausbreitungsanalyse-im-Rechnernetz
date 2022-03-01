@@ -48,6 +48,10 @@ public class Node implements Comparable<Node> {
         return parent;
     }
 
+    public void setParent(Node parent) {
+        this.parent = parent;
+    }
+
     @Override
     public int compareTo(Node o) {
         return this.address.compareTo(o.address);
