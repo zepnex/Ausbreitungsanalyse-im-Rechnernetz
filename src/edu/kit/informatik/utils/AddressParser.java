@@ -18,7 +18,7 @@ import java.util.regex.Matcher;
  */
 public class AddressParser {
 
-    private static final String REGEX = "\\(\\s|\\s\\)|(\\s){2}";
+   // private static final String REGEX = "\\(\\s|\\s\\)|(\\s){2}";
 
 
     /**
@@ -41,7 +41,7 @@ public class AddressParser {
 
         for (int i = 0; i < tempMatches.size(); i++) {
             String match = tempMatches.get(i);
-            if (match.startsWith("(")) ipTree.add(i, AddressParser.bracketParserIps(match));
+            if (match.startsWith("(")) ipTree.add(i, bracketParserIps(match));
             else ipTree.add(i, match);
         }
         return ipTree;
@@ -74,8 +74,8 @@ public class AddressParser {
      */
     public static Node bracketParser(String bracketNotation) throws ParseException {
         System.out.println(bracketNotation);
-        if (Pattern.compile(REGEX).matcher(bracketNotation).find())
-            throw new ParseException("Invalid bracket notation");
+//        if (Pattern.compile(REGEX).matcher(bracketNotation).find())
+//            throw new ParseException("Invalid bracket notation");
         List<Object> ipTree = bracketParserIps(bracketNotation);
         System.out.println(ipTree);
         return ipsCreateTree(ipTree);

@@ -16,7 +16,7 @@ import static edu.kit.informatik.graph.GraphRules.isCircular;
  * @author unyrg
  * @version 1.0
  */
-public class Network {
+public class Network extends AddressParser{
 
     /**
      *
@@ -52,6 +52,7 @@ public class Network {
         if (bracketNotation == null || bracketNotation.split(" ").length <= 1)
             throw new ParseException("Invalid bracket notation");
         root = AddressParser.bracketParser(bracketNotation);
+        root = bracketParser(bracketNotation);
         network.add(root);
         updateAllNodes(network);
         if (isCircular(network.get(0), allNodes))
@@ -82,14 +83,19 @@ public class Network {
     }
 
     public boolean contains(final IP ip) {
-        return false;
+        return allNodes.contains(getAsNode(ip));
     }
 
     public int getHeight(final IP root) {
-        return 0;
+        if (root.compareTo(this.root.getAddress()) != 0) {
+            IP oldRoot = this.root.getAddress();
+            changeRoot(oldRoot, null);
+        }
+        return getLevels(root).size() - 1;
     }
 
     public List<List<IP>> getLevels(final IP root) {
+        if (root == null) return new ArrayList<>();
         Node networkRoot = getRoot(root);
         List<List<IP>> layers = new ArrayList<>();
         layers.add(List.of(networkRoot.getAddress()));
@@ -111,6 +117,8 @@ public class Network {
      * @return tree in bracket notation
      */
     public String toString(IP root) {
+        if (root.compareTo(this.root.getAddress()) != 0)
+            changeRoot(root, null);
         Node networkRoot = getRoot(root);
         String bracketNotation = buildBracketNotation(networkRoot).toString();
         return bracketNotation.substring(1);
@@ -125,7 +133,6 @@ public class Network {
     public StringBuilder buildBracketNotation(Node root) {
         StringBuilder bracketNotation = new StringBuilder();
         if (!root.getChildren().isEmpty()) {
-
             for (Node child : root.getChildren()) {
                 bracketNotation.append(buildBracketNotation(child));
             }
@@ -173,7 +180,8 @@ public class Network {
 
 
     private Node getRoot(IP root) {
-        for (Node node : network) {
+        for (Node node : allNodes) {
+            // System.out.println(node.getAddress().compareTo(root));
             if (node.getAddress().compareTo(root) == 0) {
                 return node;
             }
@@ -184,11 +192,6 @@ public class Network {
 
     public void changeRoot(IP newRoot, Node newParent) {
         Node node = getAsNode(newRoot);
-
-        // TODO: change children of new root
-        //TODO: change children and parent of its prior parent
-        //TODO: do it for every node till last root
-
         if (newParent == null) {
             changeRoot(node.getParent().getAddress(), node);
             node.getChildren().add(node.getParent());
