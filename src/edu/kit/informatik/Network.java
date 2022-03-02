@@ -4,6 +4,7 @@ import edu.kit.informatik.graph.Node;
 import edu.kit.informatik.utils.AddressParser;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -16,7 +17,7 @@ import static edu.kit.informatik.graph.GraphRules.isCircular;
  * @author unyrg
  * @version 1.0
  */
-public class Network extends AddressParser{
+public class Network extends AddressParser {
 
     /**
      *
@@ -41,6 +42,8 @@ public class Network extends AddressParser{
         this.root = new Node(root, convertToNode(children));
         network.add(this.root);
         updateAllNodes(network);
+        if (isCircular(network.get(0), allNodes))
+            throw new ParseException("ERROR: Circular Tree");
     }
 
 
@@ -86,20 +89,31 @@ public class Network extends AddressParser{
         return allNodes.contains(getAsNode(ip));
     }
 
+    /**
+     * Searching for the maximum depth of the tree
+     *
+     * @param root root ip for the network/starting point
+     * @return returning the height/depth of the tree
+     */
     public int getHeight(final IP root) {
-        if (root.compareTo(this.root.getAddress()) != 0) {
-            IP oldRoot = this.root.getAddress();
-            changeRoot(oldRoot, null);
-        }
+        if (root.compareTo(this.root.getAddress()) != 0)
+            betterChangeRoot(root, null);
         return getLevels(root).size() - 1;
     }
 
+    /**
+     * Storing all nodes from the same layer into a list
+     *
+     * @param root root of the network
+     * @return list of lists where every list contains every node of each layer
+     */
     public List<List<IP>> getLevels(final IP root) {
         if (root == null) return new ArrayList<>();
-        Node networkRoot = getRoot(root);
+        if (root.compareTo(this.root.getAddress()) != 0)
+            betterChangeRoot(root, null);
         List<List<IP>> layers = new ArrayList<>();
-        layers.add(List.of(networkRoot.getAddress()));
-        for (List<Node> cursor = new ArrayList<>(networkRoot.getChildren()); !cursor.isEmpty(); ) {
+        layers.add(List.of(this.root.getAddress()));
+        for (List<Node> cursor = new ArrayList<>(this.root.getChildren()); !cursor.isEmpty(); ) {
             layers.add(cursor.stream().map(Node::getAddress).sorted().collect(Collectors.toList()));
             cursor = cursor.stream().map(Node::getChildren).flatMap(List::stream).collect(Collectors.toList());
         }
@@ -107,7 +121,18 @@ public class Network extends AddressParser{
     }
 
     public List<IP> getRoute(final IP start, final IP end) {
-        return null;
+        betterChangeRoot(start, null);
+        List<IP> path = new ArrayList<>();
+        Node destination = getAsNode(end);
+        while (destination.getParent() != null) {
+            System.out.println("i");
+            path.add(destination.getAddress());
+            destination = destination.getParent();
+        }
+        path.add(destination.getAddress());
+        Collections.reverse(path);
+
+        return path;
     }
 
     /**
@@ -118,10 +143,8 @@ public class Network extends AddressParser{
      */
     public String toString(IP root) {
         if (root.compareTo(this.root.getAddress()) != 0)
-            changeRoot(root, null);
-        Node networkRoot = getRoot(root);
-        String bracketNotation = buildBracketNotation(networkRoot).toString();
-        return bracketNotation.substring(1);
+            betterChangeRoot(root, null);
+        return buildBracketNotation(this.root).substring(1);
     }
 
     /**
@@ -167,52 +190,35 @@ public class Network extends AddressParser{
      */
     private void updateAllNodes(List<Node> network) throws ParseException {
         for (Node root : network) {
-            //     System.out.println(root.getAddress().toString());
             if (!root.getChildren().isEmpty()) {
                 allNodes.add(root);
                 updateAllNodes(root.getChildren());
             } else {
-                // if (allNodes.contains(root)) throw new ParseException("Tree is circular");
                 allNodes.add(root);
             }
         }
     }
 
-
-    private Node getRoot(IP root) {
-        for (Node node : allNodes) {
-            // System.out.println(node.getAddress().compareTo(root));
-            if (node.getAddress().compareTo(root) == 0) {
-                return node;
-            }
+    /**
+     * Changing the root address of the network
+     *
+     * @param newRoot   new root for the network
+     * @param newParent new parent for each node
+     */
+    public void betterChangeRoot(IP newRoot, Node newParent) {
+        Node currentNode = getAsNode(newRoot);
+        if (currentNode.getParent() != null) {
+            betterChangeRoot(currentNode.getParent().getAddress(), currentNode);
+            currentNode.getChildren().add(currentNode.getParent());
         }
-        //TODO: idk what to throw here
-        throw new RuntimeException();
-    }
-
-    public void changeRoot(IP newRoot, Node newParent) {
-        Node node = getAsNode(newRoot);
-        if (newParent == null) {
-            changeRoot(node.getParent().getAddress(), node);
-            node.getChildren().add(node.getParent());
-            node.setParent(newParent);
-        } else if (node.getParent() == null) {
-            node.getChildren().remove(newParent);
-            node.setParent(newParent);
-        } else {
-            changeRoot(node.getParent().getAddress(), node);
-            node.getChildren().add(node.getParent());
-            node.getChildren().remove(newParent);
-            node.setParent(newParent);
-        }
-        if (node.getParent() == null) {
-            network.remove(root);
-            root = node;
-            network.add(root);
-        }
+        currentNode.getChildren().remove(newParent);
+        currentNode.setParent(newParent);
+        root = currentNode;
     }
 
     /**
+     * Returning the associated node
+     *
      * @param node an IP-Address
      * @return IP-Address as its node
      */

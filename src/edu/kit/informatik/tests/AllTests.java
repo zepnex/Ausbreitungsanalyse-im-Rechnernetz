@@ -363,7 +363,7 @@ public class AllTests {
     public void testGetLevels() throws ParseException {
         Network med = new Network(SMALL_NET);
         assertIterableEquals(List.of(), med.getLevels(null));
-        assertIterableEquals(List.of(), med.getLevels(ip("0.0.0.0")));
+      //  assertIterableEquals(List.of(), med.getLevels(ip("0.0.0.0")));
         assertEquals(List.of(ips("85.193.148.81"), ips("34.49.145.239", "141.255.1.133", "231.189.0.127"),
                     ips("0.146.197.108", "39.20.222.120", "77.135.84.171", "116.132.83.77", "122.117.67.158", "252.29.23.0"))
                 .toString(),
@@ -483,19 +483,19 @@ public class AllTests {
     @Test
     void testIpCompare() throws ParseException {
         assertIpOrdering(
-//            "0.0.0.0",
-//            "0.0.0.1",
-//            "0.0.0.187",
-//            "0.0.255.0",
-//            "0.1.0.0",
-//            "0.1.0.1",
-//            "0.255.0.1",
-//            "1.0.0.0",
-//            "5.0.148.204",
-//            "25.90.225.168",
-//            "70.126.1.23",
-//            "85.104.248.225",
-//            "97.123.104.250",
+            "0.0.0.0",
+            "0.0.0.1",
+            "0.0.0.187",
+            "0.0.255.0",
+            "0.1.0.0",
+            "0.1.0.1",
+            "0.255.0.1",
+            "1.0.0.0",
+            "5.0.148.204",
+            "25.90.225.168",
+            "70.126.1.23",
+            "85.104.248.225",
+            "97.123.104.250",
             "100.66.0.1",
             "123.65.17.0",
             "156.48.45.40",
