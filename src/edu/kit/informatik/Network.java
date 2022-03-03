@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 import static edu.kit.informatik.graph.GraphRules.isCircular;
@@ -17,7 +18,7 @@ import static edu.kit.informatik.graph.GraphRules.isCircular;
  * @author unyrg
  * @version 1.0
  */
-public class Network extends AddressParser {
+public class Network {
 
     /**
      *
@@ -28,7 +29,7 @@ public class Network extends AddressParser {
      */
     SortedSet<Node> allNodes = new TreeSet<>();
 
-    Node root;
+    private Node networkRoot;
 
 
     /**
@@ -39,10 +40,10 @@ public class Network extends AddressParser {
      */
     public Network(final IP root, final List<IP> children) throws ParseException {
         if (children.isEmpty()) throw new RuntimeException();
-        this.root = new Node(root, convertToNode(children));
-        network.add(this.root);
+        this.networkRoot = new Node(root, convertToNode(children));
+        network.add(this.networkRoot);
         updateAllNodes(network);
-        if (isCircular(network.get(0), allNodes))
+        if (isCircular(this.networkRoot, allNodes))
             throw new ParseException("ERROR: Circular Tree");
     }
 
@@ -54,15 +55,34 @@ public class Network extends AddressParser {
     public Network(final String bracketNotation) throws ParseException {
         if (bracketNotation == null || bracketNotation.split(" ").length <= 1)
             throw new ParseException("Invalid bracket notation");
-        root = AddressParser.bracketParser(bracketNotation);
-        root = bracketParser(bracketNotation);
-        network.add(root);
+        networkRoot = AddressParser.bracketParser(bracketNotation);
+        network.add(networkRoot);
         updateAllNodes(network);
-        if (isCircular(network.get(0), allNodes))
+        if (isCircular(networkRoot, allNodes))
             throw new ParseException("ERROR: Circular Tree");
     }
 
-    public boolean add(final Network subnet) {
+    /**
+     * Adding a subnet to the network
+     *
+     * @param subnet subnetwork
+     *
+     * @return true or false depending on if subnet gets actually connected to main-net
+     * @throws ParseException fails if creation of IP in .copy() fails
+     */
+    public boolean add(final Network subnet) throws ParseException {
+        Node copy = subnet.getNetworkRoot().copy();
+        network.add(copy);
+        for (Node node : allNodes) {
+            if (node.compareTo(copy) == 0) {
+                List<Node> updatedChildren
+                    = Stream.concat(node.getChildren().stream(), copy.getChildren().stream()).collect(
+                    Collectors.toList());
+                node.setChildren(updatedChildren);
+                return true;
+            }
+        }
+        network.add(copy);
         return false;
     }
 
@@ -78,13 +98,31 @@ public class Network extends AddressParser {
     }
 
     public boolean connect(final IP ip1, final IP ip2) {
-        return false;
+
+        if (!allNodes.contains(getAsNode(ip1)) || !allNodes.contains(getAsNode(ip2)))
+            return false;
+        if (ip1.compareTo(networkRoot.getAddress()) != 0)
+            betterChangeRoot(ip1, null);
+        Node parent = getAsNode(ip1);
+        parent.getChildren().add(getAsNode(ip2));
+        if (isCircular(networkRoot, allNodes)) {
+            parent.getChildren().remove(getAsNode(ip2));
+            return false;
+        }
+        return true;
     }
 
     public boolean disconnect(final IP ip1, final IP ip2) {
         return false;
     }
 
+
+    /**
+     * checks if a specific IP is connected to the network
+     *
+     * @param ip IP-Address you want to check
+     * @return true of false
+     */
     public boolean contains(final IP ip) {
         return allNodes.contains(getAsNode(ip));
     }
@@ -96,7 +134,7 @@ public class Network extends AddressParser {
      * @return returning the height/depth of the tree
      */
     public int getHeight(final IP root) {
-        if (root.compareTo(this.root.getAddress()) != 0)
+        if (root.compareTo(networkRoot.getAddress()) != 0)
             betterChangeRoot(root, null);
         return getLevels(root).size() - 1;
     }
@@ -109,11 +147,11 @@ public class Network extends AddressParser {
      */
     public List<List<IP>> getLevels(final IP root) {
         if (root == null) return new ArrayList<>();
-        if (root.compareTo(this.root.getAddress()) != 0)
+        if (root.compareTo(networkRoot.getAddress()) != 0)
             betterChangeRoot(root, null);
         List<List<IP>> layers = new ArrayList<>();
-        layers.add(List.of(this.root.getAddress()));
-        for (List<Node> cursor = new ArrayList<>(this.root.getChildren()); !cursor.isEmpty(); ) {
+        layers.add(List.of(networkRoot.getAddress()));
+        for (List<Node> cursor = new ArrayList<>(networkRoot.getChildren()); !cursor.isEmpty(); ) {
             layers.add(cursor.stream().map(Node::getAddress).sorted().collect(Collectors.toList()));
             cursor = cursor.stream().map(Node::getChildren).flatMap(List::stream).collect(Collectors.toList());
         }
@@ -125,7 +163,6 @@ public class Network extends AddressParser {
         List<IP> path = new ArrayList<>();
         Node destination = getAsNode(end);
         while (destination.getParent() != null) {
-            System.out.println("i");
             path.add(destination.getAddress());
             destination = destination.getParent();
         }
@@ -142,9 +179,9 @@ public class Network extends AddressParser {
      * @return tree in bracket notation
      */
     public String toString(IP root) {
-        if (root.compareTo(this.root.getAddress()) != 0)
+        if (root.compareTo(networkRoot.getAddress()) != 0)
             betterChangeRoot(root, null);
-        return buildBracketNotation(this.root).substring(1);
+        return buildBracketNotation(networkRoot).substring(1);
     }
 
     /**
@@ -213,7 +250,7 @@ public class Network extends AddressParser {
         }
         currentNode.getChildren().remove(newParent);
         currentNode.setParent(newParent);
-        root = currentNode;
+        networkRoot = currentNode;
     }
 
     /**
@@ -226,4 +263,8 @@ public class Network extends AddressParser {
         return allNodes.stream().filter(x -> x.getAddress().compareTo(node) == 0).findFirst().orElse(null);
     }
 
+
+    public Node getNetworkRoot() {
+        return networkRoot;
+    }
 }

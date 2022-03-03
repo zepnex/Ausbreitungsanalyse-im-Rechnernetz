@@ -1,7 +1,9 @@
 package edu.kit.informatik.graph;
 
 import edu.kit.informatik.IP;
+import edu.kit.informatik.ParseException;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -32,7 +34,29 @@ public class Node implements Comparable<Node> {
         }
     }
 
+    /**
+     * Deep copy a node structure without references
+     *
+     * @return A deep copy of a node with its children
+     * @throws ParseException when creating a new IP fails
+     */
+    public Node copy() throws ParseException {
+        if (!this.getChildren().isEmpty()) {
+            List<Node> children = new ArrayList<>();
+            for (Node child : this.getChildren()) {
+                children.add(child.copy());
+            }
+            return new Node(new IP(this.getAddress().toString()), children);
+        } else {
+            return new Node(new IP(this.getAddress().toString()), new ArrayList<>());
+        }
+    }
+
+
     public void setChildren(List<Node> children) {
+        for (Node child : children) {
+            child.setParent(this);
+        }
         this.children = children;
     }
 

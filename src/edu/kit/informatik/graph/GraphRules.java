@@ -15,8 +15,10 @@ public class GraphRules {
         for (List<Node> cursor = new ArrayList<>(root.getChildren()); !cursor.isEmpty(); ) {
             edges += (cursor.stream().map(Node::getAddress).count());
             cursor = cursor.stream().map(Node::getChildren).flatMap(List::stream).collect(Collectors.toList());
+            if (edges > allNodes.size())
+                return true;
         }
-        System.out.println(edges + " | " + allNodes.size());
+      //  System.out.println(edges + " | " + allNodes.size());
 
         return edges == allNodes.size();
     }
