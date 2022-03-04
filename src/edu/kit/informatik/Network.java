@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 import static edu.kit.informatik.graph.GraphRules.isCircular;
@@ -18,7 +17,7 @@ import static edu.kit.informatik.graph.GraphRules.isCircular;
  * @author unyrg
  * @version 1.0
  */
-public class Network {
+public class Network implements Cloneable {
 
     /**
      *
@@ -38,13 +37,13 @@ public class Network {
      * @param root     root address
      * @param children child which is connected to root
      */
-    public Network(final IP root, final List<IP> children) throws ParseException {
+    public Network(final IP root, final List<IP> children) {
         if (children.isEmpty()) throw new RuntimeException();
         this.networkRoot = new Node(root, convertToNode(children));
         network.add(this.networkRoot);
-        updateAllNodes(network);
+        allNodes.addAll(updateAllNodes(network));
         if (isCircular(this.networkRoot, allNodes))
-            throw new ParseException("ERROR: Circular Tree");
+            throw new IllegalArgumentException("ERROR: Circular Tree");
     }
 
 
@@ -57,7 +56,18 @@ public class Network {
             throw new ParseException("Invalid bracket notation");
         networkRoot = AddressParser.bracketParser(bracketNotation);
         network.add(networkRoot);
-        updateAllNodes(network);
+        allNodes.addAll(updateAllNodes(network));
+        if (isCircular(networkRoot, allNodes))
+            throw new ParseException("ERROR: Circular Tree");
+    }
+
+    private Network(Node node, List<Node> subNets) throws ParseException {
+        network.add(node);
+        for (Node subnet : subNets) {
+            allNodes.addAll(getAsList(subnet.copy()));
+        }
+        networkRoot = node;
+        allNodes.addAll(updateAllNodes(network));
         if (isCircular(networkRoot, allNodes))
             throw new ParseException("ERROR: Circular Tree");
     }
@@ -66,24 +76,64 @@ public class Network {
      * Adding a subnet to the network
      *
      * @param subnet subnetwork
-     *
      * @return true or false depending on if subnet gets actually connected to main-net
-     * @throws ParseException fails if creation of IP in .copy() fails
      */
-    public boolean add(final Network subnet) throws ParseException {
-        Node copy = subnet.getNetworkRoot().copy();
-        network.add(copy);
-        for (Node node : allNodes) {
-            if (node.compareTo(copy) == 0) {
-                List<Node> updatedChildren
-                    = Stream.concat(node.getChildren().stream(), copy.getChildren().stream()).collect(
-                    Collectors.toList());
-                node.setChildren(updatedChildren);
-                return true;
+    public boolean add(final Network subnet) {
+        try {
+            if (subnet == null) return false;
+            List<Node> subnetNetwork = subnet.getNetwork();
+            Network subnetCopy = new Network(subnet.networkRoot.copy(), subnetNetwork);
+            SortedSet<Node> allNodesCopy = getAsList(networkRoot.copy());
+
+            for (Node net : subnetCopy.getNetwork()) {
+                boolean foundSubNode = false;
+                for (Node child : getAsList(net)) {
+                    if (allNodesCopy.contains(child)) {
+                        foundSubNode = true;
+                        subnetCopy.betterChangeRoot(child.getAddress(), null);
+                        updateAllNodes(List.of(net));
+                        Node mergePoint = allNodesCopy.stream().filter(x -> x.compareTo(child) == 0).findFirst().get();
+                        Node updatedNet
+                            = subnetCopy.getNetwork().stream().filter(x -> x.compareTo(child) == 0).findFirst().get();
+                        mergePoint.addChildren(updatedNet.getChildren());
+                    }
+                }
+                if (!foundSubNode) {
+                    network.add(net);
+                }
             }
+
+            Node prob = allNodesCopy.stream().filter(x -> x.getParent() == null).findFirst().orElse(null);
+            if (prob == null) {
+                network.addAll(subnetCopy.getNetwork());
+                return false;
+            }
+            SortedSet<Node> test = new TreeSet<>();
+            test.addAll(allNodes);
+            test.addAll(subnetCopy.allNodes);
+
+            if (isCircular(prob, test)) {
+                System.err.println("Tree is circular");
+                network.addAll(subnetCopy.getNetwork());
+                return false;
+            } else {
+                allNodes.addAll(test);
+                network.remove(networkRoot);
+                networkRoot = prob;
+                network.add(networkRoot);
+            }
+
+        } catch (ParseException ignored) {
         }
-        network.add(copy);
-        return false;
+        return true;
+    }
+
+
+    public SortedSet<Node> getDuplicate(Node subnet, Node mainNet) {
+        SortedSet<Node> sub = getAsList(subnet);
+        SortedSet<Node> main = getAsList(mainNet);
+        sub.retainAll(main);
+        return sub;
     }
 
     /**
@@ -106,14 +156,19 @@ public class Network {
         Node parent = getAsNode(ip1);
         parent.getChildren().add(getAsNode(ip2));
         if (isCircular(networkRoot, allNodes)) {
+            System.out.println("test");
             parent.getChildren().remove(getAsNode(ip2));
             return false;
         }
         return true;
     }
 
+
     public boolean disconnect(final IP ip1, final IP ip2) {
-        return false;
+        if (!allNodes.contains(getAsNode(ip1)) || !allNodes.contains(getAsNode(ip2)))
+            return false;
+        Node parent = getAsNode(ip1);
+        return parent.getChildren().contains(getAsNode(ip2));
     }
 
 
@@ -124,7 +179,7 @@ public class Network {
      * @return true of false
      */
     public boolean contains(final IP ip) {
-        return allNodes.contains(getAsNode(ip));
+        return !checkIP(ip);
     }
 
     /**
@@ -134,6 +189,8 @@ public class Network {
      * @return returning the height/depth of the tree
      */
     public int getHeight(final IP root) {
+
+        if (root == null || !allNodes.stream().anyMatch(x -> x.getAddress().compareTo(root) == 0)) return 0;
         if (root.compareTo(networkRoot.getAddress()) != 0)
             betterChangeRoot(root, null);
         return getLevels(root).size() - 1;
@@ -146,7 +203,7 @@ public class Network {
      * @return list of lists where every list contains every node of each layer
      */
     public List<List<IP>> getLevels(final IP root) {
-        if (root == null) return new ArrayList<>();
+        if (root == null || checkIP(root)) return new ArrayList<>();
         if (root.compareTo(networkRoot.getAddress()) != 0)
             betterChangeRoot(root, null);
         List<List<IP>> layers = new ArrayList<>();
@@ -158,7 +215,20 @@ public class Network {
         return layers;
     }
 
+
+    SortedSet<Node> getAsList(Node root) {
+        SortedSet<Node> list = new TreeSet<>();
+        list.add(root);
+        for (List<Node> cursor = new ArrayList<>(root.getChildren()); !cursor.isEmpty(); ) {
+            list.addAll(cursor);
+            cursor = cursor.stream().map(Node::getChildren).flatMap(List::stream).collect(Collectors.toList());
+        }
+        return list;
+    }
+
     public List<IP> getRoute(final IP start, final IP end) {
+        if (start == null || end == null || checkIP(start) || checkIP(end))
+            return new ArrayList<>();
         betterChangeRoot(start, null);
         List<IP> path = new ArrayList<>();
         Node destination = getAsNode(end);
@@ -168,7 +238,8 @@ public class Network {
         }
         path.add(destination.getAddress());
         Collections.reverse(path);
-
+        if (!path.contains(start))
+            return new ArrayList<>();
         return path;
     }
 
@@ -179,8 +250,10 @@ public class Network {
      * @return tree in bracket notation
      */
     public String toString(IP root) {
-        if (root.compareTo(networkRoot.getAddress()) != 0)
+        if (root == null || checkIP(root)) return "";
+        if (root.compareTo(networkRoot.getAddress()) != 0) {
             betterChangeRoot(root, null);
+        }
         return buildBracketNotation(networkRoot).substring(1);
     }
 
@@ -193,6 +266,7 @@ public class Network {
     public StringBuilder buildBracketNotation(Node root) {
         StringBuilder bracketNotation = new StringBuilder();
         if (!root.getChildren().isEmpty()) {
+            Collections.sort(root.getChildren());
             for (Node child : root.getChildren()) {
                 bracketNotation.append(buildBracketNotation(child));
             }
@@ -225,15 +299,17 @@ public class Network {
      *
      * @param network new network or addresses that has been created
      */
-    private void updateAllNodes(List<Node> network) throws ParseException {
+    private SortedSet<Node> updateAllNodes(List<Node> network) {
+        SortedSet<Node> nodes = new TreeSet<>();
         for (Node root : network) {
             if (!root.getChildren().isEmpty()) {
-                allNodes.add(root);
-                updateAllNodes(root.getChildren());
+                nodes.add(root);
+                nodes.addAll(updateAllNodes(root.getChildren()));
             } else {
-                allNodes.add(root);
+                nodes.add(root);
             }
         }
+        return nodes;
     }
 
     /**
@@ -250,7 +326,9 @@ public class Network {
         }
         currentNode.getChildren().remove(newParent);
         currentNode.setParent(newParent);
+        network.remove(networkRoot);
         networkRoot = currentNode;
+        network.add(networkRoot);
     }
 
     /**
@@ -264,7 +342,16 @@ public class Network {
     }
 
 
+    public List<Node> getNetwork() {
+        return List.copyOf(network);
+    }
+
     public Node getNetworkRoot() {
         return networkRoot;
     }
+
+    boolean checkIP(IP root) {
+        return allNodes.stream().noneMatch(x -> x.getAddress().compareTo(root) == 0);
+    }
+
 }

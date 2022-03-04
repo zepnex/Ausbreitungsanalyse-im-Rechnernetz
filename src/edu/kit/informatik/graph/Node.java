@@ -38,26 +38,30 @@ public class Node implements Comparable<Node> {
      * Deep copy a node structure without references
      *
      * @return A deep copy of a node with its children
-     * @throws ParseException when creating a new IP fails
      */
-    public Node copy() throws ParseException {
-        if (!this.getChildren().isEmpty()) {
-            List<Node> children = new ArrayList<>();
-            for (Node child : this.getChildren()) {
-                children.add(child.copy());
+    public Node copy() {
+        try {
+            if (!this.getChildren().isEmpty()) {
+                List<Node> children = new ArrayList<>();
+                for (Node child : this.getChildren()) {
+                    children.add(child.copy());
+                }
+                return new Node(new IP(this.getAddress().toString()), children);
+            } else {
+                return new Node(new IP(this.getAddress().toString()), new ArrayList<>());
             }
-            return new Node(new IP(this.getAddress().toString()), children);
-        } else {
-            return new Node(new IP(this.getAddress().toString()), new ArrayList<>());
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
+        return null;
     }
 
 
-    public void setChildren(List<Node> children) {
+    public void addChildren(List<Node> children) {
         for (Node child : children) {
             child.setParent(this);
         }
-        this.children = children;
+        this.children.addAll(children);
     }
 
     public List<Node> getChildren() {

@@ -6,7 +6,10 @@ import edu.kit.informatik.ParseException;
 import edu.kit.informatik.graph.Node;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.Dictionary;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
@@ -18,33 +21,33 @@ import java.util.regex.Matcher;
  */
 public class AddressParser {
 
-   // private static final String REGEX = "\\(\\s|\\s\\)|(\\s){2}";
-
+    //private static final String REGEX = "\\s{2}|^\\s\\(|\\(\\s|^\\({2}";
+    private static final String VALIDCHARACTERS = "^\\(([0-9.()]{7,15} ?)*\\)$";
+    private static final String ChildrenWithoutChildren = "\\([0-9.\\[\\]\\s]*\\)";
 
     /**
      * Converts bracket notation to list of sublist and IP-Addresses
      *
-     * @param bracketNotation network in bracket notation
+     * @param children Dictionary with placeholder and their IP String Arrays
+     * @param child    placeholder ID
      * @return List of IP-Addresses as string and sublist
+     * @throws ParseException s
      */
-    public static List<Object> bracketParserIps(String bracketNotation) {
-        bracketNotation = bracketNotation.substring(1, bracketNotation.length() - 1);
-        // Regex out of Hell
-        String regexSearchChild = "(\\(([0-9.\\s]+(\\([0-9.\\s()]*\\)*[0-9().\\s]+)*)\\)|[0-9.]+)";
-        Pattern pattern = Pattern.compile(regexSearchChild);
-        Matcher matcher = pattern.matcher(bracketNotation);
-        List<String> tempMatches = new ArrayList<>();
-        while (matcher.find()) {
-            tempMatches.add(matcher.group());
-        }
-        List<Object> ipTree = new ArrayList<>();
+    public static List<Object> bracketParserIps(Dictionary<Integer, String[]> children, int child)
+        throws ParseException {
+        String[] tempChildList = children.get(child);
+        if (tempChildList.length < 2) throw new ParseException("invalid bracket notation");
+        List<Object> childList = new ArrayList<>();
 
-        for (int i = 0; i < tempMatches.size(); i++) {
-            String match = tempMatches.get(i);
-            if (match.startsWith("(")) ipTree.add(i, bracketParserIps(match));
-            else ipTree.add(i, match);
+        for (String chil : tempChildList) {
+            if (chil.startsWith("[") && chil.endsWith("]")) {
+                childList.add(bracketParserIps(children, Integer.parseInt(chil.substring(1, chil.length() - 1))));
+            } else {
+                childList.add(chil);
+            }
         }
-        return ipTree;
+
+        return childList;
     }
 
     /**
@@ -73,11 +76,47 @@ public class AddressParser {
      * @throws ParseException
      */
     public static Node bracketParser(String bracketNotation) throws ParseException {
-//        if (Pattern.compile(REGEX).matcher(bracketNotation).find())
-//            throw new ParseException("Invalid bracket notation");
-        List<Object> ipTree = bracketParserIps(bracketNotation);
+
+        System.out.println(!Pattern.compile(VALIDCHARACTERS).matcher(bracketNotation).find());
+        if (!Pattern.compile(VALIDCHARACTERS).matcher(bracketNotation).find() || bracketNotation.startsWith("(("))
+            throw new ParseException("Invalid bracket notation");
+        if (!equalBracket(bracketNotation)) throw new ParseException("invalid bracket notation");
+
+        Pattern pattern = Pattern.compile(ChildrenWithoutChildren);
+        Dictionary<Integer, String[]> children = new Hashtable<>();
+        int placeholder = 0;
+        while (bracketNotation.length() > 6) {
+            Matcher matcher = pattern.matcher(bracketNotation);
+            while (matcher.find()) {
+                String childString = matcher.group();
+                String[] childList = childString.substring(1, childString.length() - 1).split(" ");
+                children.put(placeholder, childList);
+                bracketNotation = bracketNotation.replace(childString, "[" + placeholder + "]");
+                ++placeholder;
+            }
+        }
+
+        List<Object> ipTree = bracketParserIps(children, children.size() - 1);
+        System.out.println(ipTree);
 
         return ipsCreateTree(ipTree);
-
     }
+
+    /**
+     *
+     * @param string bracketnotation
+     * @return true, false
+     */
+    public static boolean equalBracket(String string) {
+        String brackets = string.replaceAll("[0-9. ]", "");
+        int cnt = 0;
+        for (char character : brackets.toCharArray()) {
+            if (character == '(') cnt++;
+            if (character == ')') cnt--;
+
+        }
+        return cnt == 0;
+    }
+
+
 }

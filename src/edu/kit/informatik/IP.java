@@ -10,8 +10,9 @@ import java.util.regex.Pattern;
 public class IP implements Comparable<IP> {
     private static final String VALIDADDRESS
         = "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$";
-    private static final String CHECKZERO = "^(0)(0{2})\\.";
-    //    100.66.0.1
+    private static final String CHECKZERO
+        = "^([1-9][0-9]{0,2}|0)\\.([1-9][0-9]{0,2}|0)\\.([1-9][0-9]{0,2}|0)\\.([1-9][0-9]{0,2}|0)$";
+
     private int ipAddress;
 
 
@@ -22,7 +23,7 @@ public class IP implements Comparable<IP> {
      */
     public IP(final String pointNotation) throws ParseException {
         String[] parts = pointNotation.split("\\.");
-        if (Pattern.matches(VALIDADDRESS, pointNotation) && !Pattern.compile(CHECKZERO).matcher(pointNotation).find()) {
+        if (Pattern.matches(VALIDADDRESS, pointNotation) && Pattern.matches(CHECKZERO, pointNotation)) {
             ipAddress = 0;
             for (int i = 0; i < parts.length; i++) {
                 ipAddress += (Integer.parseInt(parts[i]) << (24 - (8 * i)));
