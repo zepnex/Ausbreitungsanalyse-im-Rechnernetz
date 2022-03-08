@@ -11,7 +11,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 
-import static edu.kit.informatik.graph.GraphRules.isCircular;
+import static edu.kit.informatik.graph.GraphRules.betterIsCircular;
 
 /**
  * @author unyrg
@@ -42,7 +42,7 @@ public class Network implements Cloneable {
         this.networkRoot = new Node(root, convertToNode(children));
         network.add(this.networkRoot);
         allNodes.addAll(updateAllNodes(network));
-        if (isCircular(this.networkRoot, allNodes))
+        if (betterIsCircular(this.networkRoot))
             throw new IllegalArgumentException("ERROR: Circular Tree");
     }
 
@@ -57,18 +57,17 @@ public class Network implements Cloneable {
         networkRoot = AddressParser.bracketParser(bracketNotation);
         network.add(networkRoot);
         allNodes.addAll(updateAllNodes(network));
-        if (isCircular(networkRoot, allNodes))
+        if (betterIsCircular(networkRoot))
             throw new ParseException("ERROR: Circular Tree");
     }
 
-    private Network(Node node, List<Node> subNets) throws ParseException {
-        network.add(node);
+    private Network(List<Node> subNets) throws ParseException {
         for (Node subnet : subNets) {
-            allNodes.addAll(getAsList(subnet.copy()));
+            network.add(subnet.copy());
         }
-        networkRoot = node;
-        allNodes.addAll(updateAllNodes(network));
-        if (isCircular(networkRoot, allNodes))
+        networkRoot = network.get(0);
+        allNodes = updateAllNodes(network);
+        if (betterIsCircular(networkRoot))
             throw new ParseException("ERROR: Circular Tree");
     }
 
@@ -82,7 +81,7 @@ public class Network implements Cloneable {
         try {
             if (subnet == null) return false;
             List<Node> subnetNetwork = subnet.getNetwork();
-            Network subnetCopy = new Network(subnet.networkRoot.copy(), subnetNetwork);
+            Network subnetCopy = new Network(subnetNetwork);
             SortedSet<Node> allNodesCopy = getAsList(networkRoot.copy());
 
             for (Node net : subnetCopy.getNetwork()) {
@@ -112,28 +111,20 @@ public class Network implements Cloneable {
             test.addAll(allNodes);
             test.addAll(subnetCopy.allNodes);
 
-            if (isCircular(prob, test)) {
+            if (betterIsCircular(prob)) {
                 System.err.println("Tree is circular");
                 network.addAll(subnetCopy.getNetwork());
                 return false;
             } else {
                 allNodes.addAll(test);
                 network.remove(networkRoot);
-                networkRoot = prob;
+                //networkRoot = prob;
                 network.add(networkRoot);
             }
 
         } catch (ParseException ignored) {
         }
         return true;
-    }
-
-
-    public SortedSet<Node> getDuplicate(Node subnet, Node mainNet) {
-        SortedSet<Node> sub = getAsList(subnet);
-        SortedSet<Node> main = getAsList(mainNet);
-        sub.retainAll(main);
-        return sub;
     }
 
     /**
@@ -148,18 +139,33 @@ public class Network implements Cloneable {
     }
 
     public boolean connect(final IP ip1, final IP ip2) {
+        if (ip1 == null || ip2 == null || checkIP(ip1) || checkIP(ip2) || ip1.compareTo(ip2) == 0) return false;
+        Node IP1 = getAsNode(ip1);
+        Node IP2 = getAsNode(ip2);
+        Node netRoot = getSubnetRoot(getAsNode(ip1));
+        Node netCopy = netRoot.copy();
+        SortedSet<Node> netNodes = getAsList(netCopy);
 
-        if (!allNodes.contains(getAsNode(ip1)) || !allNodes.contains(getAsNode(ip2)))
+        if (netNodes.stream().anyMatch(x -> x.getAddress().compareTo(ip2) == 0))
             return false;
-        if (ip1.compareTo(networkRoot.getAddress()) != 0)
-            betterChangeRoot(ip1, null);
-        Node parent = getAsNode(ip1);
-        parent.getChildren().add(getAsNode(ip2));
-        if (isCircular(networkRoot, allNodes)) {
-            System.out.println("test");
-            parent.getChildren().remove(getAsNode(ip2));
+        Node mergePoint = netNodes.stream().filter(x -> x.getAddress().compareTo(ip1) == 0).findFirst().get();
+
+        if (ip2.compareTo(getSubnetRoot(getAsNode(ip2)).getAddress()) != 0)
+            betterChangeRoot(ip2, null);
+        Node oldSubnet = getSubnetRoot(getAsNode(ip2));
+        mergePoint.addChildren(List.of(getAsNode(ip2)));
+
+        if (betterIsCircular(netCopy)) {
+            System.err.println("Tree is circular");
             return false;
         }
+        System.out.println(getSubnetRoot(getAsNode(ip1)).getAddress().toString());
+        IP1.addChildren(List.of(IP2));
+        // getAsNode(ip1).addChildren(List.of(getAsNode(ip2)));
+        Node root = getSubnetRoot(getAsNode(ip2));
+
+
+        network.remove(oldSubnet);
         return true;
     }
 
@@ -191,9 +197,11 @@ public class Network implements Cloneable {
     public int getHeight(final IP root) {
 
         if (root == null || !allNodes.stream().anyMatch(x -> x.getAddress().compareTo(root) == 0)) return 0;
-        if (root.compareTo(networkRoot.getAddress()) != 0)
+        Node rootNode = getSubnetRoot(getAsNode(root));
+        if (root.compareTo(rootNode.getAddress()) != 0) {
             betterChangeRoot(root, null);
-        return getLevels(root).size() - 1;
+        }
+        return getLevels(getSubnetRoot(rootNode).getAddress()).size() - 1;
     }
 
     /**
@@ -204,11 +212,13 @@ public class Network implements Cloneable {
      */
     public List<List<IP>> getLevels(final IP root) {
         if (root == null || checkIP(root)) return new ArrayList<>();
-        if (root.compareTo(networkRoot.getAddress()) != 0)
+        Node rootNode = getSubnetRoot(getAsNode(root));
+        if (root.compareTo(rootNode.getAddress()) != 0) {
             betterChangeRoot(root, null);
+        }
         List<List<IP>> layers = new ArrayList<>();
-        layers.add(List.of(networkRoot.getAddress()));
-        for (List<Node> cursor = new ArrayList<>(networkRoot.getChildren()); !cursor.isEmpty(); ) {
+        layers.add(List.of(getSubnetRoot(rootNode).getAddress()));
+        for (List<Node> cursor = new ArrayList<>(getSubnetRoot(rootNode).getChildren()); !cursor.isEmpty(); ) {
             layers.add(cursor.stream().map(Node::getAddress).sorted().collect(Collectors.toList()));
             cursor = cursor.stream().map(Node::getChildren).flatMap(List::stream).collect(Collectors.toList());
         }
@@ -251,10 +261,11 @@ public class Network implements Cloneable {
      */
     public String toString(IP root) {
         if (root == null || checkIP(root)) return "";
-        if (root.compareTo(networkRoot.getAddress()) != 0) {
+        Node rootNode = getSubnetRoot(getAsNode(root));
+        if (root.compareTo(rootNode.getAddress()) != 0) {
             betterChangeRoot(root, null);
         }
-        return buildBracketNotation(networkRoot).substring(1);
+        return buildBracketNotation(getSubnetRoot(rootNode)).substring(1);
     }
 
     /**
@@ -320,15 +331,22 @@ public class Network implements Cloneable {
      */
     public void betterChangeRoot(IP newRoot, Node newParent) {
         Node currentNode = getAsNode(newRoot);
+        Node nodeRoot = getSubnetRoot(currentNode);
+        if (newParent == null) {
+            network.remove(nodeRoot);
+            network.add(currentNode);
+        }
         if (currentNode.getParent() != null) {
             betterChangeRoot(currentNode.getParent().getAddress(), currentNode);
             currentNode.getChildren().add(currentNode.getParent());
         }
         currentNode.getChildren().remove(newParent);
         currentNode.setParent(newParent);
-        network.remove(networkRoot);
-        networkRoot = currentNode;
-        network.add(networkRoot);
+
+
+//        network.remove(networkRoot);
+//        networkRoot = currentNode;
+//        network.add(networkRoot);
     }
 
     /**
@@ -354,4 +372,10 @@ public class Network implements Cloneable {
         return allNodes.stream().noneMatch(x -> x.getAddress().compareTo(root) == 0);
     }
 
+
+    Node getSubnetRoot(Node node) {
+        if (node.getParent() == null)
+            return node;
+        return getSubnetRoot(node.getParent());
+    }
 }

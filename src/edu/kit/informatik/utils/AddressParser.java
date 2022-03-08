@@ -6,7 +6,6 @@ import edu.kit.informatik.ParseException;
 import edu.kit.informatik.graph.Node;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Dictionary;
@@ -21,7 +20,6 @@ import java.util.regex.Matcher;
  */
 public class AddressParser {
 
-    //private static final String REGEX = "\\s{2}|^\\s\\(|\\(\\s|^\\({2}";
     private static final String VALIDCHARACTERS = "^\\(([0-9.()]{7,15} ?)*\\)$";
     private static final String ChildrenWithoutChildren = "\\([0-9.\\[\\]\\s]*\\)";
 
@@ -39,11 +37,12 @@ public class AddressParser {
         if (tempChildList.length < 2) throw new ParseException("invalid bracket notation");
         List<Object> childList = new ArrayList<>();
 
-        for (String chil : tempChildList) {
-            if (chil.startsWith("[") && chil.endsWith("]")) {
-                childList.add(bracketParserIps(children, Integer.parseInt(chil.substring(1, chil.length() - 1))));
+        for (String tempChild : tempChildList) {
+            if (tempChild.startsWith("[") && tempChild.endsWith("]")) {
+                childList.add(
+                    bracketParserIps(children, Integer.parseInt(tempChild.substring(1, tempChild.length() - 1))));
             } else {
-                childList.add(chil);
+                childList.add(tempChild);
             }
         }
 
@@ -77,7 +76,6 @@ public class AddressParser {
      */
     public static Node bracketParser(String bracketNotation) throws ParseException {
 
-        System.out.println(!Pattern.compile(VALIDCHARACTERS).matcher(bracketNotation).find());
         if (!Pattern.compile(VALIDCHARACTERS).matcher(bracketNotation).find() || bracketNotation.startsWith("(("))
             throw new ParseException("Invalid bracket notation");
         if (!equalBracket(bracketNotation)) throw new ParseException("invalid bracket notation");
@@ -103,7 +101,6 @@ public class AddressParser {
     }
 
     /**
-     *
      * @param string bracketnotation
      * @return true, false
      */
@@ -117,6 +114,4 @@ public class AddressParser {
         }
         return cnt == 0;
     }
-
-
 }

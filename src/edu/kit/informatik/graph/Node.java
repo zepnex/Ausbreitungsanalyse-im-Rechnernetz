@@ -17,6 +17,7 @@ public class Node implements Comparable<Node> {
     private final IP address;
     private List<Node> children;
     private Node parent;
+    boolean isVisited = false;
 
     /**
      * @param address  a
@@ -103,6 +104,14 @@ public class Node implements Comparable<Node> {
         result = 31 * result + (children != null ? children.hashCode() : 0);
         result = 31 * result + (parent != null ? parent.hashCode() : 0);
         return result;
+    }
+
+    void visit() {
+        isVisited = false;
+    }
+
+    public String toString() {
+        return address.toString();
     }
 
 }
