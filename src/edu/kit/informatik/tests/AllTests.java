@@ -237,6 +237,7 @@ public class AllTests {
                 new IP("77.135.84.171"), new IP("116.132.83.77"),
                 new IP("122.117.67.158"), new IP("252.29.23.0")));
         assertEquals(levels.size() - 1, network.getHeight(root));
+        System.out.println(network.list());
         assertTrue(network.disconnect(new IP("85.193.148.81"),
             new IP("34.49.145.239")));
         assertEquals(List.of(new IP("0.146.197.108"), new IP("39.20.222.120"),

@@ -20,8 +20,8 @@ import java.util.regex.Matcher;
  */
 public class AddressParser {
 
-    private static final String VALIDCHARACTERS = "^\\(([0-9.()]{7,15} ?)*\\)$";
-    private static final String ChildrenWithoutChildren = "\\([0-9.\\[\\]\\s]*\\)";
+    private static final String VALID_CHARACTERS = "^\\(([0-9.()]{7,15} ?)*\\)$";
+    private static final String CHILDREN_WITHOUT_CHILDREN = "\\([0-9.\\[\\]\\s]*\\)";
 
     /**
      * Converts bracket notation to list of sublist and IP-Addresses
@@ -70,39 +70,38 @@ public class AddressParser {
     }
 
     /**
-     * @param bracketNotation
+     * @param bracketNotation network in bracket notation
      * @return List of node which
-     * @throws ParseException
+     * @throws ParseException if something is wrong in the bracket notation
      */
     public static Node bracketParser(String bracketNotation) throws ParseException {
-
-        if (!Pattern.compile(VALIDCHARACTERS).matcher(bracketNotation).find() || bracketNotation.startsWith("(("))
+        String notation = bracketNotation;
+        if (!Pattern.compile(VALID_CHARACTERS).matcher(notation).find() || notation.startsWith("(("))
             throw new ParseException("Invalid bracket notation");
-        if (!equalBracket(bracketNotation)) throw new ParseException("invalid bracket notation");
+        if (!equalBracket(notation)) throw new ParseException("invalid bracket notation");
 
-        Pattern pattern = Pattern.compile(ChildrenWithoutChildren);
+        Pattern pattern = Pattern.compile(CHILDREN_WITHOUT_CHILDREN);
         Dictionary<Integer, String[]> children = new Hashtable<>();
         int placeholder = 0;
-        while (bracketNotation.length() > 6) {
-            Matcher matcher = pattern.matcher(bracketNotation);
+        while (notation.length() > 6) {
+            Matcher matcher = pattern.matcher(notation);
             while (matcher.find()) {
                 String childString = matcher.group();
                 String[] childList = childString.substring(1, childString.length() - 1).split(" ");
                 children.put(placeholder, childList);
-                bracketNotation = bracketNotation.replace(childString, "[" + placeholder + "]");
+                notation = notation.replace(childString, "[" + placeholder + "]");
                 ++placeholder;
             }
         }
 
         List<Object> ipTree = bracketParserIps(children, children.size() - 1);
-        System.out.println(ipTree);
 
         return ipsCreateTree(ipTree);
     }
 
     /**
-     * @param string bracketnotation
-     * @return true, false
+     * @param string bracket notation
+     * @return boolean depending on if there is an equal amount of closing and opening brackets
      */
     public static boolean equalBracket(String string) {
         String brackets = string.replaceAll("[0-9. ]", "");

@@ -6,7 +6,7 @@ import edu.kit.informatik.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * @author unyrg
@@ -15,13 +15,14 @@ import java.util.Objects;
 public class Node implements Comparable<Node> {
 
     private final IP address;
-    private List<Node> children;
+    private final List<Node> children;
     private Node parent;
-    boolean isVisited = false;
 
     /**
-     * @param address  a
-     * @param children a
+     * Constructor of a node
+     *
+     * @param address  IP-Address
+     * @param children list of children
      */
 
     public Node(IP address, List<Node> children) {
@@ -38,7 +39,7 @@ public class Node implements Comparable<Node> {
     /**
      * Deep copy a node structure without references
      *
-     * @return A deep copy of a node with its children
+     * @return A deep copy of a node with a copy of its children and so on
      */
     public Node copy() {
         try {
@@ -57,7 +58,11 @@ public class Node implements Comparable<Node> {
         return null;
     }
 
-
+    /**
+     * adding new Children to a node
+     *
+     * @param children list of children to add
+     */
     public void addChildren(List<Node> children) {
         for (Node child : children) {
             child.setParent(this);
@@ -65,18 +70,38 @@ public class Node implements Comparable<Node> {
         this.children.addAll(children);
     }
 
+    /**
+     * Getting the list of children
+     *
+     * @return list of children for a node
+     */
     public List<Node> getChildren() {
         return children;
     }
 
+    /**
+     * Getting the IP-Address of a node
+     *
+     * @return IP-reference
+     */
     public IP getAddress() {
         return address;
     }
 
+    /**
+     * Getting the Parent of a node
+     *
+     * @return parent
+     */
     public Node getParent() {
         return parent;
     }
 
+    /**
+     * setting the parent of a node
+     *
+     * @param parent
+     */
     public void setParent(Node parent) {
         this.parent = parent;
     }
@@ -92,10 +117,15 @@ public class Node implements Comparable<Node> {
         if (o == null || getClass() != o.getClass()) return false;
 
         Node node = (Node) o;
+        if (address.compareTo(node.getAddress()) != 0) return false;
+        if (parent != null && parent.getAddress().compareTo(node.getParent().getAddress()) != 0) return false;
+        if (children != null && children.size() != node.getChildren().size()) return false;
 
-        if (!Objects.equals(address, node.address)) return false;
-        if (!Objects.equals(children, node.children)) return false;
-        return Objects.equals(parent, node.parent);
+        List<String> childAddresses = node.getChildren().stream().map(Node::toString).collect(Collectors.toList());
+        for (Node child: children) {
+            if (!childAddresses.contains(child.toString())) return false;
+        }
+        return true;
     }
 
     @Override
@@ -106,10 +136,11 @@ public class Node implements Comparable<Node> {
         return result;
     }
 
-    void visit() {
-        isVisited = false;
-    }
-
+    /**
+     * to String methode for a Node
+     *
+     * @return address but in point notation
+     */
     public String toString() {
         return address.toString();
     }
