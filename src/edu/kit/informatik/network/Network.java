@@ -177,6 +177,8 @@ public class Network {
     }
 
     /**
+     * returns a list of all IP-Addresses
+     *
      * @return list of all IP addresses
      */
     public List<IP> list() {
