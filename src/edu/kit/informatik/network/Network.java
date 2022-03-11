@@ -107,33 +107,34 @@ public class Network {
                 allNodes.addAll(getAsList(independent));
                 changed = true;
             }
-
-            List<Node> used = new ArrayList<>();
-            List<Node> rootUsed = new ArrayList<>();
-            independentTrees = new ArrayList<>();
-            dependentTrees = new ArrayList<>();
-
-            for (Node root : this.subnets) {
-                if (!used.contains(root) && !rootUsed.contains(root)) {
-                    for (Node other : this.subnets) {
-                        if (root != other && !used.contains(other) && !rootUsed.contains(other)) {
-                            boolean thisChanged
-                                = this.connectNodes(root, other, this, independentTrees, dependentTrees);
-                            if (thisChanged) used.add(other);
-                            if (thisChanged && !rootUsed.contains(root)) rootUsed.add(root);
-                        }
-                    }
-                }
-            }
-
-            this.subnets.removeAll(used);
-
+            mergeInternSubnets();
 
         } catch (ParseException e) {
             e.printStackTrace();
         }
 
         return changed;
+    }
+
+
+    private void mergeInternSubnets() {
+        List<Node> used = new ArrayList<>();
+        List<Node> rootUsed = new ArrayList<>();
+        List<Node> independentTrees = new ArrayList<>();
+        List<Node> dependentTrees = new ArrayList<>();
+        for (Node root : this.subnets) {
+            if (!used.contains(root) && !rootUsed.contains(root)) {
+                for (Node other : this.subnets) {
+                    if (root != other && !used.contains(other) && !rootUsed.contains(other)) {
+                        boolean thisChanged
+                            = this.connectNodes(root, other, this, independentTrees, dependentTrees);
+                        if (thisChanged) used.add(other);
+                        if (thisChanged && !rootUsed.contains(root)) rootUsed.add(root);
+                    }
+                }
+            }
+        }
+        this.subnets.removeAll(used);
     }
 
 
