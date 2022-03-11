@@ -14,8 +14,10 @@ public class IP implements Comparable<IP> {
         = "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$";
     private static final String CHECK_ZERO
         = "^([1-9][0-9]{0,2}|0)\\.([1-9][0-9]{0,2}|0)\\.([1-9][0-9]{0,2}|0)\\.([1-9][0-9]{0,2}|0)$";
-    private static final int MAX_IP_LENGTH = 24;
+    private static final int MAX_IP_LENGTH_BITS = 24;
     private static final int BIT_SHIFT_CONSTANT = 8;
+    private static final int MAX_IP_LENGTH_BYTES = 3;
+    private static final int BIT_MASK = 0xFF;
     private int ipAddress;
 
 
@@ -29,7 +31,7 @@ public class IP implements Comparable<IP> {
         if (Pattern.matches(VALID_ADDRESS, pointNotation) && Pattern.matches(CHECK_ZERO, pointNotation)) {
             ipAddress = 0;
             for (int i = 0; i < parts.length; i++) {
-                ipAddress += (Integer.parseInt(parts[i]) << (MAX_IP_LENGTH - (BIT_SHIFT_CONSTANT * i)));
+                ipAddress += (Integer.parseInt(parts[i]) << (MAX_IP_LENGTH_BITS - (BIT_SHIFT_CONSTANT * i)));
             }
         } else {
             throw new ParseException("Error: not a valid IP address");
@@ -39,8 +41,8 @@ public class IP implements Comparable<IP> {
     @Override
     public String toString() {
         StringBuilder temp = new StringBuilder();
-        for (int i = 0; i < 4; i++) {
-            temp.insert(0, ((ipAddress >> 8 * i) & 0xFF) + ".");
+        for (int i = 0; i <= MAX_IP_LENGTH_BYTES; i++) {
+            temp.insert(0, ((ipAddress >> BIT_SHIFT_CONSTANT * i) & BIT_MASK) + ".");
         }
         return temp.substring(0, temp.length() - 1);
     }

@@ -211,7 +211,6 @@ public class Network {
         mergePoint.addChildren(List.of(node2));
 
         if (betterIsCircular(netCopy)) {
-            System.err.println("Tree is circular");
             return false;
         }
         node1.addChildren(List.of(node2));

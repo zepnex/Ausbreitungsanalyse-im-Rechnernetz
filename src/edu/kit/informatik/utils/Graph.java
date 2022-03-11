@@ -175,7 +175,6 @@ public final class Graph {
      * @return list of children of the root but as Node objects
      */
     public static List<Node> convertToNode(List<IP> children) {
-        //TODO: What happens when children have children?
         List<Node> list = new ArrayList<>();
         for (IP address : children) {
             list.add(new Node(address, new ArrayList<>()));
