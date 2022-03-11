@@ -15,6 +15,7 @@ public class IP implements Comparable<IP> {
     private static final String CHECK_ZERO
         = "^([1-9][0-9]{0,2}|0)\\.([1-9][0-9]{0,2}|0)\\.([1-9][0-9]{0,2}|0)\\.([1-9][0-9]{0,2}|0)$";
     private static final int MAX_IP_LENGTH = 24;
+    private static final int BIT_SHIFT_CONSTANT = 8;
     private int ipAddress;
 
 
@@ -28,12 +29,11 @@ public class IP implements Comparable<IP> {
         if (Pattern.matches(VALID_ADDRESS, pointNotation) && Pattern.matches(CHECK_ZERO, pointNotation)) {
             ipAddress = 0;
             for (int i = 0; i < parts.length; i++) {
-                ipAddress += (Integer.parseInt(parts[i]) << (MAX_IP_LENGTH - (8 * i)));
+                ipAddress += (Integer.parseInt(parts[i]) << (MAX_IP_LENGTH - (BIT_SHIFT_CONSTANT * i)));
             }
         } else {
             throw new ParseException("Error: not a valid IP address");
         }
-        //System.out.println(ipAddress);
     }
 
     @Override
