@@ -4,7 +4,6 @@ package edu.kit.informatik.network;
 import edu.kit.informatik.graph.Node;
 import edu.kit.informatik.utils.AddressParser;
 
-import javax.swing.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -91,15 +90,17 @@ public class Network {
 
             List<Node> independentTrees = new ArrayList<>();
             List<Node> dependentTrees = new ArrayList<>();
-            List<Node> subNetUsed = new ArrayList<>();
+
+            List<Node> subnets = subnetCopy.subnets;
+            List<Node> subnetsUsed = new ArrayList<>();
+
             for (Node root : this.subnets) {
-                for (Node subnetNode : subnetCopy.subnets) {
-                    if (!subNetUsed.contains(subnetNode)) {
-                        boolean thisChanged
-                            = this.connectNodes(root, subnetNode, subnetCopy, independentTrees, dependentTrees);
-                        if (thisChanged) subNetUsed.add(subnetNode);
-                        changed = changed || thisChanged;
-                    }
+                subnets.removeAll(subnetsUsed);
+                for (Node subnetNode : subnets) {
+                    boolean thisChanged
+                        = this.connectNodes(root, subnetNode, subnetCopy, independentTrees, dependentTrees);
+                    if (thisChanged) subnetsUsed.add(subnetNode);
+                    changed = changed || thisChanged;
                 }
             }
 
@@ -111,15 +112,10 @@ public class Network {
 
             List<Node> used = new ArrayList<>();
             List<Node> rootUsed = new ArrayList<>();
-            independentTrees = new ArrayList<>();
-            dependentTrees = new ArrayList<>();
-
-
             for (Node root : this.subnets) {
                 if (!used.contains(root) && !rootUsed.contains(root)) {
-                    for (Node other : this.subnets) {
-                        mergeInternSubnets(root, other, rootUsed, used, dependentTrees, independentTrees);
-                    }
+                    this.subnets.forEach(
+                        other -> mergeInternSubnets(root, other, rootUsed, used));
                 }
             }
 
@@ -134,20 +130,18 @@ public class Network {
     }
 
     /**
-     *  Merge subnets after extern subnets have been merged
-     * @param root s
-     * @param other s
-     * @param rootUsed s
-     * @param used s
-     * @param dependentTrees s
-     * @param independentTrees s
+     * Merge subnets after extern subnets have been merged
+     *
+     * @param root             MainNetwork root
+     * @param other            other network in main network subnets
+     * @param rootUsed         list of already tried merged subnets
+     * @param used             list of successfully merged subnets
      */
-    void mergeInternSubnets(Node root, Node other, List<Node> rootUsed, List<Node> used, List<Node> dependentTrees,
-                            List<Node> independentTrees) {
+    void mergeInternSubnets(Node root, Node other, List<Node> rootUsed, List<Node> used) {
 
         if (root != other && !used.contains(other) && !rootUsed.contains(other)) {
             boolean thisChanged
-                = this.connectNodes(root, other, this, independentTrees, dependentTrees);
+                = this.connectNodes(root, other, this, new ArrayList<>(), new ArrayList<>());
             if (thisChanged) used.add(other);
             if (thisChanged && !rootUsed.contains(root)) rootUsed.add(root);
         }
@@ -159,7 +153,6 @@ public class Network {
         if (connection != null) {
             try {
                 Network subnetCopy = new Network(subnet.getSubnets());
-                subnetCopy.subnets.removeAll(added);
                 Node connectionSub;
                 Node connectionRoot;
                 if (subnet == this) {
