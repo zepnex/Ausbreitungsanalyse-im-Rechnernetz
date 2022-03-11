@@ -1,8 +1,8 @@
 package edu.kit.informatik.utils;
 
 
-import edu.kit.informatik.IP;
-import edu.kit.informatik.ParseException;
+import edu.kit.informatik.network.IP;
+import edu.kit.informatik.network.ParseException;
 import edu.kit.informatik.graph.Node;
 
 import java.util.ArrayList;
@@ -18,10 +18,14 @@ import java.util.regex.Matcher;
  * @author unyrg
  * @version 1.0
  */
-public class AddressParser {
+public final class AddressParser {
 
     private static final String VALID_CHARACTERS = "^\\(([0-9.()]{7,15} ?)*\\)$";
     private static final String CHILDREN_WITHOUT_CHILDREN = "\\([0-9.\\[\\]\\s]*\\)";
+
+    private AddressParser() {
+
+    }
 
     /**
      * Converts bracket notation to list of sublist and IP-Addresses

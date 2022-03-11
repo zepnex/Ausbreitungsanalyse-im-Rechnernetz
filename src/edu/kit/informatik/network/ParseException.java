@@ -1,4 +1,4 @@
-package edu.kit.informatik;
+package edu.kit.informatik.network;
 
 /**
  * @author unyrg

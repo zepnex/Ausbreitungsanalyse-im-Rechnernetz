@@ -1,7 +1,8 @@
-package edu.kit.informatik.graph;
+package edu.kit.informatik.utils;
 
 
-import edu.kit.informatik.IP;
+import edu.kit.informatik.network.IP;
+import edu.kit.informatik.graph.Node;
 
 import java.util.LinkedList;
 import java.util.Queue;
@@ -9,12 +10,12 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
+ * Checking if a graph is correctly implemented
+ *
  * @author unyrg
  * @version 1.0
  */
-public class GraphRules {
-
-    //TODO: implement a variety of checks to make sure the graph is correctly
+public final class GraphRules {
 
     /**
      * Checking if tree is circular
@@ -41,7 +42,7 @@ public class GraphRules {
     /**
      * checking if an IP is existing
      *
-     * @param root the Ip you want to check
+     * @param root     the Ip you want to check
      * @param allNodes all nodes of the network
      * @return boolean, depending on if IP exists or not
      */
