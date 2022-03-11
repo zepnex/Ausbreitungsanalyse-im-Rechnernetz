@@ -1,7 +1,8 @@
-package edu.kit.informatik.graph;
+package edu.kit.informatik.utils;
 
-import edu.kit.informatik.IP;
-import edu.kit.informatik.Network;
+import edu.kit.informatik.network.IP;
+import edu.kit.informatik.network.Network;
+import edu.kit.informatik.graph.Node;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,10 +12,12 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 /**
+ * Utility class for Graph
+ *
  * @author unyrg
  * @version 1.0
  */
-public class Graph {
+public final class Graph {
     /**
      * finding connection point between two trees
      *
@@ -22,7 +25,7 @@ public class Graph {
      * @param sub        root note of the list we want to merge
      * @return IP if a merge-point was found
      */
-    protected IP findConnection(List<List<IP>> rootLayers, Node sub) {
+    public static IP findConnection(List<List<IP>> rootLayers, Node sub) {
         List<IP> subIPs = getAsList(sub).stream().map(Node::getAddress).collect(Collectors.toList());
         for (List<IP> layer : rootLayers) {
             List<IP> tempSub = new ArrayList<>(List.copyOf(subIPs));
@@ -41,7 +44,7 @@ public class Graph {
      * @param sub        connecting point of the subtree
      * @param subnetCopy copy of the network we want to merge
      */
-    protected void connectChildrenNodes(Node root, Node sub, Network subnetCopy) {
+    public static void connectChildrenNodes(Node root, Node sub, Network subnetCopy) {
         root.addChildren(
             sub.getChildren().stream().filter(
                 x -> !root.getChildren().stream().map(Node::toString).collect(Collectors.toList())
@@ -75,7 +78,7 @@ public class Graph {
      * @param root root node of the subnet
      * @return list of all nodes this subnet contains
      */
-    protected SortedSet<Node> getAsList(Node root) {
+    public static SortedSet<Node> getAsList(Node root) {
         SortedSet<Node> list = new TreeSet<>();
         list.add(root);
         for (List<Node> cursor = new ArrayList<>(root.getChildren()); !cursor.isEmpty();) {
@@ -91,7 +94,7 @@ public class Graph {
      * @param root root IP but as Node
      * @return full bracket notation as string
      */
-    protected StringBuilder buildBracketNotation(Node root) {
+    public static StringBuilder buildBracketNotation(Node root) {
         StringBuilder bracketNotation = new StringBuilder();
         if (!root.getChildren().isEmpty()) {
             Collections.sort(root.getChildren());
@@ -111,7 +114,7 @@ public class Graph {
      * @param network new network or addresses that has been created
      * @return returns list of all nodes which the network contains
      */
-    protected SortedSet<Node> updateAllNodes(List<Node> network) {
+    public static SortedSet<Node> updateAllNodes(List<Node> network) {
         SortedSet<Node> nodes = new TreeSet<>();
         for (Node root : network) {
             if (!root.getChildren().isEmpty()) {
@@ -130,7 +133,7 @@ public class Graph {
      * @param node the node u want the root from
      * @return root node of the subnet
      */
-    protected Node getSubnetRoot(Node node) {
+    public static Node getSubnetRoot(Node node) {
         if (node.getParent() == null) return node;
         return getSubnetRoot(node.getParent());
     }
@@ -139,11 +142,11 @@ public class Graph {
      * Changes the root of a subnet
      *
      * @param currentNode node we want to change
-     * @param newParent new parent for current node
-     * @param subnet subnet that gets changed
+     * @param newParent   new parent for current node
+     * @param subnet      subnet that gets changed
      * @return new List of subnets with changed root
      */
-    protected List<Node> changeToRoot(Node currentNode, Node newParent, List<Node> subnet) {
+    public static List<Node> changeToRoot(Node currentNode, Node newParent, List<Node> subnet) {
         List<Node> sub = new ArrayList<>(subnet);
         Node nodeRoot = getSubnetRoot(currentNode);
         if (newParent == null) {
@@ -166,7 +169,7 @@ public class Graph {
      * @param children list of children of the root
      * @return list of children of the root but as Node objects
      */
-    protected List<Node> convertToNode(List<IP> children) {
+    public static List<Node> convertToNode(List<IP> children) {
         //TODO: What happens when children have children?
         List<Node> list = new ArrayList<>();
         for (IP address : children) {
@@ -174,6 +177,4 @@ public class Graph {
         }
         return list;
     }
-
-
 }

@@ -1,6 +1,6 @@
-package edu.kit.informatik;
+package edu.kit.informatik.network;
 
-import edu.kit.informatik.graph.Graph;
+
 import edu.kit.informatik.graph.Node;
 import edu.kit.informatik.utils.AddressParser;
 
@@ -11,8 +11,17 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import static edu.kit.informatik.graph.GraphRules.betterIsCircular;
-import static edu.kit.informatik.graph.GraphRules.checkIP;
+
+import static edu.kit.informatik.utils.Graph.buildBracketNotation;
+import static edu.kit.informatik.utils.Graph.changeToRoot;
+import static edu.kit.informatik.utils.Graph.connectChildrenNodes;
+import static edu.kit.informatik.utils.Graph.convertToNode;
+import static edu.kit.informatik.utils.Graph.findConnection;
+import static edu.kit.informatik.utils.Graph.getAsList;
+import static edu.kit.informatik.utils.Graph.getSubnetRoot;
+import static edu.kit.informatik.utils.Graph.updateAllNodes;
+import static edu.kit.informatik.utils.GraphRules.betterIsCircular;
+import static edu.kit.informatik.utils.GraphRules.checkIP;
 
 /**
  * Class which represents a Network
@@ -20,7 +29,7 @@ import static edu.kit.informatik.graph.GraphRules.checkIP;
  * @author unyrg
  * @version 1.0
  */
-public class Network extends Graph {
+public class Network {
 
     private List<Node> subnets = new ArrayList<>();
     private SortedSet<Node> allNodes = new TreeSet<>();
@@ -93,7 +102,7 @@ public class Network extends Graph {
 
             this.subnets.addAll(independentTrees);
             for (Node independent : independentTrees) {
-                allNodes.addAll(subnetCopy.getAsList(independent));
+                allNodes.addAll(getAsList(independent));
                 changed = true;
             }
 
@@ -119,6 +128,7 @@ public class Network extends Graph {
 
 
         } catch (ParseException e) {
+            e.printStackTrace();
         }
 
         return changed;
@@ -302,7 +312,7 @@ public class Network extends Graph {
         }
         List<List<IP>> layers = new ArrayList<>();
         layers.add(List.of(getSubnetRoot(rootNode).getAddress()));
-        for (List<Node> cursor = new ArrayList<>(getSubnetRoot(rootNode).getChildren()); !cursor.isEmpty();) {
+        for (List<Node> cursor = new ArrayList<>(getSubnetRoot(rootNode).getChildren()); !cursor.isEmpty(); ) {
             layers.add(cursor.stream().map(Node::getAddress).sorted().collect(Collectors.toList()));
             cursor = cursor.stream().map(Node::getChildren).flatMap(List::stream).collect(Collectors.toList());
         }

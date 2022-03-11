@@ -1,7 +1,7 @@
 package edu.kit.informatik.graph;
 
-import edu.kit.informatik.IP;
-import edu.kit.informatik.ParseException;
+import edu.kit.informatik.network.IP;
+import edu.kit.informatik.network.ParseException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
+ * Representing a Node of a graph
+ *
  * @author unyrg
  * @version 1.0
  */
