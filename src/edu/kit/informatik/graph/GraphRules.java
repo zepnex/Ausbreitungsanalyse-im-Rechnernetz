@@ -1,6 +1,7 @@
 package edu.kit.informatik.graph;
 
 
+import edu.kit.informatik.IP;
 
 import java.util.LinkedList;
 import java.util.Queue;
@@ -36,4 +37,17 @@ public class GraphRules {
         }
         return false;
     }
+
+    /**
+     * checking if an IP is existing
+     *
+     * @param root the Ip you want to check
+     * @param allNodes all nodes of the network
+     * @return boolean, depending on if IP exists or not
+     */
+    public static boolean checkIP(IP root, Set<Node> allNodes) {
+        return allNodes.stream().noneMatch(x -> x.getAddress().compareTo(root) == 0);
+    }
+
+
 }

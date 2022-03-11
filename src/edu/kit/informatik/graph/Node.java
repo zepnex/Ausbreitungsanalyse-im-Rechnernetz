@@ -100,11 +100,21 @@ public class Node implements Comparable<Node> {
     /**
      * setting the parent of a node
      *
-     * @param parent
+     * @param parent new Parent
      */
     public void setParent(Node parent) {
         this.parent = parent;
     }
+
+    /**
+     * Gets the number of degrees this node has
+     *
+     * @return number of connections
+     */
+    public int getDegree() {
+        return getChildren().size() + (parent != null ? 1 : 0);
+    }
+
 
     @Override
     public int compareTo(Node o) {
@@ -122,7 +132,7 @@ public class Node implements Comparable<Node> {
         if (children != null && children.size() != node.getChildren().size()) return false;
 
         List<String> childAddresses = node.getChildren().stream().map(Node::toString).collect(Collectors.toList());
-        for (Node child: children) {
+        for (Node child : children) {
             if (!childAddresses.contains(child.toString())) return false;
         }
         return true;
