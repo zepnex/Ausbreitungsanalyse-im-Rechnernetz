@@ -50,17 +50,22 @@ public final class Graph {
      * @param subnetCopy copy of the network we want to merge
      */
     public static void connectChildrenNodes(Node root, Node sub, Network subnetCopy) {
+        // Add direct children to root
         root.addChildren(
             sub.getChildren().stream().filter(
                 x -> !root.getChildren().stream().map(Node::toString).collect(Collectors.toList())
                     .contains(x.toString())).collect(Collectors.toList()));
+        // Generate List of same children between sub and root
         List<Node> sameChildren
             = root.getChildren().stream().filter(
                 x -> sub.getChildren().stream().map(Node::toString).collect(Collectors.toList()).contains(x.toString()))
             .collect(Collectors.toList());
 
+        // Steps down same children until no same children exists
         while (!sameChildren.isEmpty()) {
             List<Node> tempSame = new ArrayList<>();
+            // for every same child adds childgiren of this child that aren't the same
+            // and adds in tempSame the same children
             for (Node child : sameChildren) {
                 Node tempSub = subnetCopy.getAsNode(child.getAddress(), -1);
                 child.addChildren(
