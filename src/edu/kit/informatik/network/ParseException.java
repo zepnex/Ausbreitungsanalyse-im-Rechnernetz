@@ -1,6 +1,8 @@
 package edu.kit.informatik.network;
 
 /**
+ * Custom exception when parsing a Network fails
+ *
  * @author unyrg
  * @version 1.0
  */

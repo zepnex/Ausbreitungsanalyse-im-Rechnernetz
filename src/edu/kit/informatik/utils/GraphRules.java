@@ -17,6 +17,10 @@ import java.util.TreeSet;
  */
 public final class GraphRules {
 
+    private GraphRules() {
+
+    }
+
     /**
      * Checking if tree is circular
      *

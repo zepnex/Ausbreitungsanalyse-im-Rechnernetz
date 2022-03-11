@@ -4,15 +4,17 @@ package edu.kit.informatik.network;
 import java.util.regex.Pattern;
 
 /**
+ * Class which represents an IP
+ *
  * @author unyrg
  * @version 1.0
  */
 public class IP implements Comparable<IP> {
-    private static final String VALIDADDRESS
+    private static final String VALID_ADDRESS
         = "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$";
-    private static final String CHECKZERO
+    private static final String CHECK_ZERO
         = "^([1-9][0-9]{0,2}|0)\\.([1-9][0-9]{0,2}|0)\\.([1-9][0-9]{0,2}|0)\\.([1-9][0-9]{0,2}|0)$";
-
+    private static final int MAX_IP_LENGTH = 24;
     private int ipAddress;
 
 
@@ -23,10 +25,10 @@ public class IP implements Comparable<IP> {
      */
     public IP(final String pointNotation) throws ParseException {
         String[] parts = pointNotation.split("\\.");
-        if (Pattern.matches(VALIDADDRESS, pointNotation) && Pattern.matches(CHECKZERO, pointNotation)) {
+        if (Pattern.matches(VALID_ADDRESS, pointNotation) && Pattern.matches(CHECK_ZERO, pointNotation)) {
             ipAddress = 0;
             for (int i = 0; i < parts.length; i++) {
-                ipAddress += (Integer.parseInt(parts[i]) << (24 - (8 * i)));
+                ipAddress += (Integer.parseInt(parts[i]) << (MAX_IP_LENGTH - (8 * i)));
             }
         } else {
             throw new ParseException("Error: not a valid IP address");
