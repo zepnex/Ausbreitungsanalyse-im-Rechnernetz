@@ -86,7 +86,7 @@ public final class Graph {
     public static SortedSet<Node> getAsList(Node root) {
         SortedSet<Node> list = new TreeSet<>();
         list.add(root);
-        for (List<Node> cursor = new ArrayList<>(root.getChildren()); !cursor.isEmpty(); ) {
+        for (List<Node> cursor = new ArrayList<>(root.getChildren()); !cursor.isEmpty();) {
             list.addAll(cursor);
             cursor = cursor.stream().map(Node::getChildren).flatMap(List::stream).collect(Collectors.toList());
         }
