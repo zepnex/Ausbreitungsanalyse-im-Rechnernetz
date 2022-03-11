@@ -4,6 +4,7 @@ package edu.kit.informatik.network;
 import edu.kit.informatik.graph.Node;
 import edu.kit.informatik.utils.AddressParser;
 
+import javax.swing.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -107,7 +108,23 @@ public class Network {
                 allNodes.addAll(getAsList(independent));
                 changed = true;
             }
-            mergeInternSubnets();
+
+            List<Node> used = new ArrayList<>();
+            List<Node> rootUsed = new ArrayList<>();
+            independentTrees = new ArrayList<>();
+            dependentTrees = new ArrayList<>();
+
+
+            for (Node root : this.subnets) {
+                if (!used.contains(root) && !rootUsed.contains(root)) {
+                    for (Node other : this.subnets) {
+                        mergeInternSubnets(root, other, rootUsed, used, dependentTrees, independentTrees);
+                    }
+                }
+            }
+
+            this.subnets.removeAll(used);
+
 
         } catch (ParseException e) {
             e.printStackTrace();
@@ -116,25 +133,24 @@ public class Network {
         return changed;
     }
 
+    /**
+     *  Merge subnets after extern subnets have been merged
+     * @param root s
+     * @param other s
+     * @param rootUsed s
+     * @param used s
+     * @param dependentTrees s
+     * @param independentTrees s
+     */
+    void mergeInternSubnets(Node root, Node other, List<Node> rootUsed, List<Node> used, List<Node> dependentTrees,
+                            List<Node> independentTrees) {
 
-    private void mergeInternSubnets() {
-        List<Node> used = new ArrayList<>();
-        List<Node> rootUsed = new ArrayList<>();
-        List<Node> independentTrees = new ArrayList<>();
-        List<Node> dependentTrees = new ArrayList<>();
-        for (Node root : this.subnets) {
-            if (!used.contains(root) && !rootUsed.contains(root)) {
-                for (Node other : this.subnets) {
-                    if (root != other && !used.contains(other) && !rootUsed.contains(other)) {
-                        boolean thisChanged
-                            = this.connectNodes(root, other, this, independentTrees, dependentTrees);
-                        if (thisChanged) used.add(other);
-                        if (thisChanged && !rootUsed.contains(root)) rootUsed.add(root);
-                    }
-                }
-            }
+        if (root != other && !used.contains(other) && !rootUsed.contains(other)) {
+            boolean thisChanged
+                = this.connectNodes(root, other, this, independentTrees, dependentTrees);
+            if (thisChanged) used.add(other);
+            if (thisChanged && !rootUsed.contains(root)) rootUsed.add(root);
         }
-        this.subnets.removeAll(used);
     }
 
 
@@ -316,7 +332,7 @@ public class Network {
         }
         List<List<IP>> layers = new ArrayList<>();
         layers.add(List.of(getSubnetRoot(rootNode).getAddress()));
-        for (List<Node> cursor = new ArrayList<>(getSubnetRoot(rootNode).getChildren()); !cursor.isEmpty();) {
+        for (List<Node> cursor = new ArrayList<>(getSubnetRoot(rootNode).getChildren()); !cursor.isEmpty(); ) {
             layers.add(cursor.stream().map(Node::getAddress).sorted().collect(Collectors.toList()));
             cursor = cursor.stream().map(Node::getChildren).flatMap(List::stream).collect(Collectors.toList());
         }
