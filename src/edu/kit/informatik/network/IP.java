@@ -1,6 +1,8 @@
 package edu.kit.informatik.network;
 
 
+import edu.kit.informatik.exceptions.ParseException;
+
 import java.util.regex.Pattern;
 
 /**

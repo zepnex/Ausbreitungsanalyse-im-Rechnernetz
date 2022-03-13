@@ -2,7 +2,7 @@ package edu.kit.informatik.utils;
 
 
 import edu.kit.informatik.network.IP;
-import edu.kit.informatik.network.ParseException;
+import edu.kit.informatik.exceptions.ParseException;
 import edu.kit.informatik.graph.Node;
 
 import java.util.ArrayList;

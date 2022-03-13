@@ -1,4 +1,4 @@
-package edu.kit.informatik.network;
+package edu.kit.informatik.exceptions;
 
 /**
  * Custom exception when parsing a Network fails

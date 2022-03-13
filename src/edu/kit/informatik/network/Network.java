@@ -1,6 +1,7 @@
 package edu.kit.informatik.network;
 
 
+import edu.kit.informatik.exceptions.ParseException;
 import edu.kit.informatik.graph.Node;
 import edu.kit.informatik.utils.AddressParser;
 
@@ -51,6 +52,17 @@ public class Network {
     }
 
 
+    public static void main(String[] args) throws ParseException {
+        Network net1 = new Network("(1.1.1.1 2.2.2.2)");
+        Network net2 = new Network("(3.3.3.3 4.4.4.4)");
+        System.out.println(net1.add(net2));
+        System.out.println(net1.add(net2));
+
+        Network network1 = new Network("(1.1.1.1 (2.2.2.2 3.3.3.3))");
+        Network network2 = new Network("(1.1.1.1 2.2.2.2 3.3.3.3)");
+        System.out.println(network1.equals(network2));
+    }
+
     /**
      * Creates a new NodeTree from bracket notation
      *
@@ -86,6 +98,7 @@ public class Network {
         if (subnet == null) return false;
         boolean changed = false;
         try {
+
             Network subnetCopy = new Network(subnet.getSubnets());
 
             List<Node> independentTrees = new ArrayList<>();
@@ -97,10 +110,12 @@ public class Network {
             for (Node root : this.subnets) {
                 subnets.removeAll(subnetsUsed);
                 for (Node subnetNode : subnets) {
-                    boolean thisChanged
-                        = this.connectNodes(root, subnetNode, subnetCopy, independentTrees, dependentTrees);
-                    if (thisChanged) subnetsUsed.add(subnetNode);
-                    changed = changed || thisChanged;
+                    if (!this.subnets.contains(subnetNode)) {
+                        boolean thisChanged
+                            = this.connectNodes(root, subnetNode, subnetCopy, independentTrees, dependentTrees);
+                        if (thisChanged) subnetsUsed.add(subnetNode);
+                        changed = changed || thisChanged;
+                    }
                 }
             }
 
@@ -132,10 +147,10 @@ public class Network {
     /**
      * Merge subnets after extern subnets have been merged
      *
-     * @param root             MainNetwork root
-     * @param other            other network in main network subnets
-     * @param rootUsed         list of already tried merged subnets
-     * @param used             list of successfully merged subnets
+     * @param root     MainNetwork root
+     * @param other    other network in main network subnets
+     * @param rootUsed list of already tried merged subnets
+     * @param used     list of successfully merged subnets
      */
     void mergeInternSubnets(Node root, Node other, List<Node> rootUsed, List<Node> used) {
 
@@ -292,6 +307,7 @@ public class Network {
      * @return true of false
      */
     public boolean contains(final IP ip) {
+        if (ip == null) return false;
         return !checkIP(ip, allNodes);
     }
 
@@ -325,7 +341,7 @@ public class Network {
         }
         List<List<IP>> layers = new ArrayList<>();
         layers.add(List.of(getSubnetRoot(rootNode).getAddress()));
-        for (List<Node> cursor = new ArrayList<>(getSubnetRoot(rootNode).getChildren()); !cursor.isEmpty();) {
+        for (List<Node> cursor = new ArrayList<>(getSubnetRoot(rootNode).getChildren()); !cursor.isEmpty(); ) {
             layers.add(cursor.stream().map(Node::getAddress).sorted().collect(Collectors.toList()));
             cursor = cursor.stream().map(Node::getChildren).flatMap(List::stream).collect(Collectors.toList());
         }
