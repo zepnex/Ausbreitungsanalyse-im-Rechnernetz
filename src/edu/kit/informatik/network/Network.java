@@ -205,7 +205,6 @@ public class Network {
         boolean ipsDontExists = GraphRules.checkIP(ip1, allNodes) || GraphRules.checkIP(ip2, allNodes);
         if (ipsDontExists || ip1.compareTo(ip2) == 0) return false;
 
-
         Node node1 = getAsNode(ip1, -1);
         Node node2 = getAsNode(ip2, -1);
         Node netRoot = Graph.getSubnetRoot(getAsNode(ip1, -1));
