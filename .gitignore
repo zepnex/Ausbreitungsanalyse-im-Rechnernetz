@@ -83,5 +83,5 @@ nbdist/
 *.iml
 out
 
-src/edu/kit/informatik/test
-src/edu/kit/informatik/test/*
+src/edu/kit/informatik/tests
+src/edu/kit/informatik/tests/*
