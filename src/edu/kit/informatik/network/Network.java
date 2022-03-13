@@ -51,18 +51,6 @@ public class Network {
         if (betterIsCircular(this.networkRoot)) throw new IllegalArgumentException("ERROR: Circular Tree");
     }
 
-
-    public static void main(String[] args) throws ParseException {
-        Network net1 = new Network("(1.1.1.1 2.2.2.2)");
-        Network net2 = new Network("(3.3.3.3 4.4.4.4)");
-        System.out.println(net1.add(net2));
-        System.out.println(net1.add(net2));
-
-        Network network1 = new Network("(1.1.1.1 (2.2.2.2 3.3.3.3))");
-        Network network2 = new Network("(1.1.1.1 2.2.2.2 3.3.3.3)");
-        System.out.println(network1.equals(network2));
-    }
-
     /**
      * Creates a new NodeTree from bracket notation
      *
@@ -341,7 +329,7 @@ public class Network {
         }
         List<List<IP>> layers = new ArrayList<>();
         layers.add(List.of(getSubnetRoot(rootNode).getAddress()));
-        for (List<Node> cursor = new ArrayList<>(getSubnetRoot(rootNode).getChildren()); !cursor.isEmpty(); ) {
+        for (List<Node> cursor = new ArrayList<>(getSubnetRoot(rootNode).getChildren()); !cursor.isEmpty();) {
             layers.add(cursor.stream().map(Node::getAddress).sorted().collect(Collectors.toList()));
             cursor = cursor.stream().map(Node::getChildren).flatMap(List::stream).collect(Collectors.toList());
         }
