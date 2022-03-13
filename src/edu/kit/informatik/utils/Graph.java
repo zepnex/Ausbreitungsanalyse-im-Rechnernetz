@@ -64,7 +64,7 @@ public final class Graph {
         // Steps down same children until no same children exists
         while (!sameChildren.isEmpty()) {
             List<Node> tempSame = new ArrayList<>();
-            // for every same child adds childgiren of this child that aren't the same
+            // for every same child adds children of this child that aren't the same
             // and adds in tempSame the same children
             for (Node child : sameChildren) {
                 Node tempSub = subnetCopy.getAsNode(child.getAddress(), -1);
