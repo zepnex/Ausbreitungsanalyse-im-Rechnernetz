@@ -91,7 +91,7 @@ public final class Graph {
     public static SortedSet<Node> getAsList(Node root) {
         SortedSet<Node> list = new TreeSet<>();
         list.add(root);
-        for (List<Node> cursor = new ArrayList<>(root.getChildren()); !cursor.isEmpty();) {
+        for (List<Node> cursor = new ArrayList<>(root.getChildren()); !cursor.isEmpty(); ) {
             list.addAll(cursor);
             cursor = cursor.stream().map(Node::getChildren).flatMap(List::stream).collect(Collectors.toList());
         }
@@ -187,10 +187,17 @@ public final class Graph {
         return list;
     }
 
-   public static List<Node> removeForDuplicates(List<Node> mainNets, List<Node> subNets) {
+
+    /**
+     * Checking for duplicate networks which the mainNetwork already contains
+     *
+     * @param mainNets List of subnets from main network
+     * @param subNets  List of subnets from subnetwork
+     * @return List of non-duplicate root nodes
+     */
+    public static List<Node> removeForDuplicates(List<Node> mainNets, List<Node> subNets) {
         List<Node> noneDuplicates = new ArrayList<>();
         for (Node subRoot : subNets) {
-
             boolean duplicate = false;
             for (Node mainRoot : mainNets) {
                 if (mainRoot.equals(subRoot)) {

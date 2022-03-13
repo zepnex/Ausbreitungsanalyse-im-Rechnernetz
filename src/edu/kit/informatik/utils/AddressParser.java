@@ -66,8 +66,10 @@ public final class AddressParser {
         List<Node> children = new ArrayList<>();
         for (Object o : childrenString) {
             if (o.getClass().getSimpleName().equals("ArrayList")) {
+                //create subtree
                 children.add(ipsCreateTree((List<Object>) o));
             } else {
+                //create parent
                 children.add(new Node(new IP((String) o), new ArrayList<>()));
             }
         }
@@ -93,9 +95,11 @@ public final class AddressParser {
         while (notation.length() > MINIMUM_IP_LENGHT) {
             Matcher matcher = pattern.matcher(notation);
             while (matcher.find()) {
+                //getting the deepest children which is defined by the first bracket which doesn't have any children
                 String childString = matcher.group();
                 String[] childList = childString.substring(1, childString.length() - 1).split(" ");
                 children.put(placeholder, childList);
+                //removing the deepest child with a placeholder
                 notation = notation.replace(childString, "[" + placeholder + "]");
                 ++placeholder;
             }

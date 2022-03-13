@@ -210,6 +210,7 @@ public class Network {
         Node node1 = getAsNode(ip1, -1);
         Node node2 = getAsNode(ip2, -1);
         Node netRoot = Graph.getSubnetRoot(getAsNode(ip1, -1));
+        //check if connections works with a copy
         Node netCopy = netRoot.copy();
         SortedSet<Node> netNodes = Graph.getAsList(netCopy);
 
@@ -223,6 +224,7 @@ public class Network {
         if (GraphRules.betterIsCircular(netCopy)) {
             return false;
         }
+        // if not circular add to real node
         node1.addChildren(List.of(node2));
         this.subnets.remove(oldSubnet);
         return true;
@@ -244,12 +246,10 @@ public class Network {
         if (allNodes.size() > 2) {
             //able to disconnect
             if (node1.getChildren().contains(node2)) {
-                //IP2 is children of IP1
                 removeConnection(node1, node2);
                 return true;
             } else if (node2.getChildren().contains(node1)) {
-                //IP1 is children of IP2
-
+                //ip2 is parent of ip1
                 betterChangeRoot(node1.getAddress(), null);
                 removeConnection(node1, node2);
                 return true;
@@ -270,6 +270,7 @@ public class Network {
             this.allNodes.remove(node2);
             if (node1.getChildren().isEmpty() && node1.getParent() == null) {
                 this.allNodes.remove(node1);
+                this.subnets.remove(node1);
             }
 
         } else {
@@ -282,7 +283,6 @@ public class Network {
             }
         }
     }
-
 
     /**
      * checks if a specific IP is connected to the network
@@ -343,16 +343,17 @@ public class Network {
     public List<IP> getRoute(final IP start, final IP end) {
         if (start == null || end == null || GraphRules.checkIP(start, allNodes) || GraphRules.checkIP(end, allNodes))
             return new ArrayList<>();
-        betterChangeRoot(start, null);
+
+        betterChangeRoot(end, null);
         List<IP> path = new ArrayList<>();
-        Node destination = getAsNode(end, -1);
+        Node destination = getAsNode(start, -1);
+        //from start node get the path through the parents till end node
         while (destination.getParent() != null) {
             path.add(destination.getAddress());
             destination = destination.getParent();
         }
         path.add(destination.getAddress());
-        Collections.reverse(path);
-        if (!path.contains(start)) return new ArrayList<>();
+        if (!path.contains(end)) return new ArrayList<>();
         return path;
     }
 
@@ -428,11 +429,13 @@ public class Network {
         if (o == null || getClass() != o.getClass()) return false;
         Network net = (Network) o;
         if (this.allNodes.size() != net.allNodes.size() || this.subnets.size() != net.subnets.size()) return false;
+
+        // List which contains the amount of connections each node has
         List<List<Integer>> listOfDegrees
             = this.subnets.stream().map(x -> Graph.getAsList(x).stream().map(Node::getDegree).sorted().collect(
             Collectors.toList())).collect(Collectors.toList());
 
-
+        // List which contains the amount of connections each node has
         List<List<Integer>> listOfDegreesSecondNet
             = net.subnets.stream().map(x -> Graph.getAsList(x).stream().map(Node::getDegree).sorted().collect(
             Collectors.toList())).collect(Collectors.toList());
