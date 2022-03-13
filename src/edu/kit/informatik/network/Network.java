@@ -4,6 +4,8 @@ package edu.kit.informatik.network;
 import edu.kit.informatik.exceptions.ParseException;
 import edu.kit.informatik.graph.Node;
 import edu.kit.informatik.utils.AddressParser;
+import edu.kit.informatik.utils.Graph;
+import edu.kit.informatik.utils.GraphRules;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,17 +14,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-
-import static edu.kit.informatik.utils.Graph.buildBracketNotation;
-import static edu.kit.informatik.utils.Graph.changeToRoot;
-import static edu.kit.informatik.utils.Graph.connectChildrenNodes;
-import static edu.kit.informatik.utils.Graph.convertToNode;
-import static edu.kit.informatik.utils.Graph.findConnection;
-import static edu.kit.informatik.utils.Graph.getAsList;
-import static edu.kit.informatik.utils.Graph.getSubnetRoot;
-import static edu.kit.informatik.utils.Graph.updateAllNodes;
-import static edu.kit.informatik.utils.GraphRules.betterIsCircular;
-import static edu.kit.informatik.utils.GraphRules.checkIP;
 
 /**
  * Class which represents a Network
@@ -45,10 +36,10 @@ public class Network {
      */
     public Network(final IP root, final List<IP> children) {
         if (children.isEmpty()) throw new RuntimeException();
-        this.networkRoot = new Node(root, convertToNode(children));
+        this.networkRoot = new Node(root, Graph.convertToNode(children));
         this.subnets.add(this.networkRoot);
-        allNodes.addAll(updateAllNodes(this.subnets));
-        if (betterIsCircular(this.networkRoot)) throw new IllegalArgumentException("ERROR: Circular Tree");
+        allNodes.addAll(Graph.updateAllNodes(this.subnets));
+        if (GraphRules.betterIsCircular(this.networkRoot)) throw new IllegalArgumentException("ERROR: Circular Tree");
     }
 
     /**
@@ -62,8 +53,8 @@ public class Network {
             throw new ParseException("Invalid bracket notation");
         networkRoot = AddressParser.bracketParser(bracketNotation);
         this.subnets.add(networkRoot);
-        allNodes.addAll(updateAllNodes(subnets));
-        if (betterIsCircular(networkRoot)) throw new ParseException("ERROR: Circular Tree");
+        allNodes.addAll(Graph.updateAllNodes(subnets));
+        if (GraphRules.betterIsCircular(networkRoot)) throw new ParseException("ERROR: Circular Tree");
     }
 
     private Network(List<Node> subNets) throws ParseException {
@@ -71,10 +62,9 @@ public class Network {
             this.subnets.add(subnet.copy());
         }
         networkRoot = subnets.get(0);
-        allNodes = updateAllNodes(this.subnets);
-        if (betterIsCircular(networkRoot)) throw new ParseException("ERROR: Circular Tree");
+        allNodes = Graph.updateAllNodes(this.subnets);
+        if (GraphRules.betterIsCircular(networkRoot)) throw new ParseException("ERROR: Circular Tree");
     }
-
 
     /**
      * Adding a subnet to the network
@@ -92,24 +82,24 @@ public class Network {
             List<Node> independentTrees = new ArrayList<>();
             List<Node> dependentTrees = new ArrayList<>();
 
-            List<Node> subnets = subnetCopy.subnets;
+            List<Node> subnets = Graph.removeForDuplicates(this.subnets, subnetCopy.subnets);
             List<Node> subnetsUsed = new ArrayList<>();
-
+            if (subnets.isEmpty()) return false;
             for (Node root : this.subnets) {
                 subnets.removeAll(subnetsUsed);
                 for (Node subnetNode : subnets) {
-                    if (!this.subnets.contains(subnetNode)) {
-                        boolean thisChanged
-                            = this.connectNodes(root, subnetNode, subnetCopy, independentTrees, dependentTrees);
-                        if (thisChanged) subnetsUsed.add(subnetNode);
-                        changed = changed || thisChanged;
-                    }
+
+                    boolean thisChanged
+                        = this.connectNodes(root, subnetNode, subnetCopy, independentTrees, dependentTrees);
+                    if (thisChanged) subnetsUsed.add(subnetNode);
+                    changed = changed || thisChanged;
+
                 }
             }
 
             this.subnets.addAll(independentTrees);
             for (Node independent : independentTrees) {
-                allNodes.addAll(getAsList(independent));
+                allNodes.addAll(Graph.getAsList(independent));
                 changed = true;
             }
 
@@ -132,6 +122,7 @@ public class Network {
         return changed;
     }
 
+
     /**
      * Merge subnets after extern subnets have been merged
      *
@@ -152,7 +143,7 @@ public class Network {
 
 
     private boolean connectNodes(Node root, Node sub, Network subnet, List<Node> toAdd, List<Node> added) {
-        IP connection = findConnection(getLevels(root.getAddress()), sub);
+        IP connection = Graph.findConnection(getLevels(root.getAddress()), sub);
         if (connection != null) {
             try {
                 Network subnetCopy = new Network(subnet.getSubnets());
@@ -168,13 +159,13 @@ public class Network {
                     subnetCopy.betterChangeRoot(connection, null);
                 }
                 Node tempRoot = connectionRoot.copy();
-                connectChildrenNodes(tempRoot, connectionSub, subnetCopy);
-                if (getAsList(connectionRoot).size() == getAsList(tempRoot).size()) return false;
-                if (betterIsCircular(tempRoot)) {
+                Graph.connectChildrenNodes(tempRoot, connectionSub, subnetCopy);
+                if (Graph.getAsList(connectionRoot).size() == Graph.getAsList(tempRoot).size()) return false;
+                if (GraphRules.betterIsCircular(tempRoot)) {
                     return false;
                 } else {
-                    connectChildrenNodes(connectionRoot, connectionSub, subnetCopy);
-                    allNodes.addAll(updateAllNodes(List.of(connectionRoot)));
+                    Graph.connectChildrenNodes(connectionRoot, connectionSub, subnetCopy);
+                    allNodes.addAll(Graph.updateAllNodes(List.of(connectionRoot)));
                 }
 
                 if (!added.contains(sub)) added.add(sub);
@@ -210,22 +201,26 @@ public class Network {
      * @return boolean if the connection was successful
      */
     public boolean connect(final IP ip1, final IP ip2) {
-        if (ip1 == null || ip2 == null || checkIP(ip1, allNodes) || checkIP(ip2, allNodes) || ip1.compareTo(ip2) == 0)
-            return false;
+        boolean ipsAreNull = ip1 == null || ip2 == null;
+        if (ipsAreNull) return false;
+        boolean ipsDontExists = GraphRules.checkIP(ip1, allNodes) || GraphRules.checkIP(ip2, allNodes);
+        if (ipsDontExists || ip1.compareTo(ip2) == 0) return false;
+
+
         Node node1 = getAsNode(ip1, -1);
         Node node2 = getAsNode(ip2, -1);
-        Node netRoot = getSubnetRoot(getAsNode(ip1, -1));
+        Node netRoot = Graph.getSubnetRoot(getAsNode(ip1, -1));
         Node netCopy = netRoot.copy();
-        SortedSet<Node> netNodes = getAsList(netCopy);
+        SortedSet<Node> netNodes = Graph.getAsList(netCopy);
 
         if (netNodes.stream().anyMatch(x -> x.getAddress().compareTo(ip2) == 0)) return false;
         Node mergePoint = netNodes.stream().filter(x -> x.getAddress().compareTo(ip1) == 0).findFirst().get();
 
-        if (ip2.compareTo(getSubnetRoot(node2).getAddress()) != 0) betterChangeRoot(ip2, null);
-        Node oldSubnet = getSubnetRoot(node1);
+        if (ip2.compareTo(Graph.getSubnetRoot(node2).getAddress()) != 0) betterChangeRoot(ip2, null);
+        Node oldSubnet = Graph.getSubnetRoot(node1);
         mergePoint.addChildren(List.of(node2));
 
-        if (betterIsCircular(netCopy)) {
+        if (GraphRules.betterIsCircular(netCopy)) {
             return false;
         }
         node1.addChildren(List.of(node2));
@@ -241,7 +236,8 @@ public class Network {
      * @return boolean if the disconnection was successful
      */
     public boolean disconnect(final IP ip1, final IP ip2) {
-        if (ip1 == null || ip2 == null || checkIP(ip1, allNodes) || checkIP(ip2, allNodes)) return false;
+        if (ip1 == null || ip2 == null || GraphRules.checkIP(ip1, allNodes) || GraphRules.checkIP(ip2, allNodes))
+            return false;
         Node node1 = getAsNode(ip1, -1);
         Node node2 = getAsNode(ip2, -1);
 
@@ -296,7 +292,7 @@ public class Network {
      */
     public boolean contains(final IP ip) {
         if (ip == null) return false;
-        return !checkIP(ip, allNodes);
+        return !GraphRules.checkIP(ip, allNodes);
     }
 
     /**
@@ -307,12 +303,12 @@ public class Network {
      */
     public int getHeight(final IP root) {
 
-        if (root == null || checkIP(root, allNodes)) return 0;
-        Node rootNode = getSubnetRoot(getAsNode(root, -1));
+        if (root == null || GraphRules.checkIP(root, allNodes)) return 0;
+        Node rootNode = Graph.getSubnetRoot(getAsNode(root, -1));
         if (root.compareTo(rootNode.getAddress()) != 0) {
             betterChangeRoot(root, null);
         }
-        return getLevels(getSubnetRoot(rootNode).getAddress()).size() - 1;
+        return getLevels(Graph.getSubnetRoot(rootNode).getAddress()).size() - 1;
     }
 
     /**
@@ -322,14 +318,14 @@ public class Network {
      * @return list of lists where every list contains every node of each layer
      */
     public List<List<IP>> getLevels(final IP root) {
-        if (root == null || checkIP(root, allNodes)) return new ArrayList<>();
-        Node rootNode = getSubnetRoot(getAsNode(root, -1));
+        if (root == null || GraphRules.checkIP(root, allNodes)) return new ArrayList<>();
+        Node rootNode = Graph.getSubnetRoot(getAsNode(root, -1));
         if (root.compareTo(rootNode.getAddress()) != 0) {
             betterChangeRoot(root, null);
         }
         List<List<IP>> layers = new ArrayList<>();
-        layers.add(List.of(getSubnetRoot(rootNode).getAddress()));
-        for (List<Node> cursor = new ArrayList<>(getSubnetRoot(rootNode).getChildren()); !cursor.isEmpty();) {
+        layers.add(List.of(Graph.getSubnetRoot(rootNode).getAddress()));
+        for (List<Node> cursor = new ArrayList<>(Graph.getSubnetRoot(rootNode).getChildren()); !cursor.isEmpty(); ) {
             layers.add(cursor.stream().map(Node::getAddress).sorted().collect(Collectors.toList()));
             cursor = cursor.stream().map(Node::getChildren).flatMap(List::stream).collect(Collectors.toList());
         }
@@ -345,7 +341,7 @@ public class Network {
      * @return list of IPs which represents the rout between two IPs
      */
     public List<IP> getRoute(final IP start, final IP end) {
-        if (start == null || end == null || checkIP(start, allNodes) || checkIP(end, allNodes))
+        if (start == null || end == null || GraphRules.checkIP(start, allNodes) || GraphRules.checkIP(end, allNodes))
             return new ArrayList<>();
         betterChangeRoot(start, null);
         List<IP> path = new ArrayList<>();
@@ -367,12 +363,12 @@ public class Network {
      * @return tree in bracket notation
      */
     public String toString(IP root) {
-        if (root == null || checkIP(root, allNodes)) return "";
-        Node rootNode = getSubnetRoot(getAsNode(root, -1));
+        if (root == null || GraphRules.checkIP(root, allNodes)) return "";
+        Node rootNode = Graph.getSubnetRoot(getAsNode(root, -1));
         if (root.compareTo(rootNode.getAddress()) != 0) {
             betterChangeRoot(root, null);
         }
-        return buildBracketNotation(getSubnetRoot(rootNode)).substring(1);
+        return Graph.buildBracketNotation(Graph.getSubnetRoot(rootNode)).substring(1);
     }
 
 
@@ -384,7 +380,7 @@ public class Network {
      */
     public void betterChangeRoot(IP newRoot, Node newParent) {
         Node currentNode = getAsNode(newRoot, -1);
-        subnets = new ArrayList<>(changeToRoot(currentNode, newParent, subnets));
+        subnets = new ArrayList<>(Graph.changeToRoot(currentNode, newParent, subnets));
 
     }
 
@@ -397,7 +393,7 @@ public class Network {
      */
     public void betterChangeRoot(IP newRoot, Node newParent, int subnet) {
         Node currentNode = getAsNode(newRoot, subnet);
-        subnets = new ArrayList<>(changeToRoot(currentNode, newParent, List.copyOf(this.subnets)));
+        subnets = new ArrayList<>(Graph.changeToRoot(currentNode, newParent, List.copyOf(this.subnets)));
     }
 
     /**
@@ -410,7 +406,8 @@ public class Network {
     public Node getAsNode(IP node, int subnet) {
         if (subnet == -1)
             return allNodes.stream().filter(x -> x.getAddress().compareTo(node) == 0).findFirst().orElse(null);
-        return getAsList(this.subnets.get(subnet)).stream().filter(x -> x.getAddress().compareTo(node) == 0).findFirst()
+        return Graph.getAsList(this.subnets.get(subnet)).stream().filter(x -> x.getAddress().compareTo(node) == 0)
+            .findFirst()
             .orElse(null);
     }
 
@@ -432,12 +429,12 @@ public class Network {
         Network net = (Network) o;
         if (this.allNodes.size() != net.allNodes.size() || this.subnets.size() != net.subnets.size()) return false;
         List<List<Integer>> listOfDegrees
-            = this.subnets.stream().map(x -> getAsList(x).stream().map(Node::getDegree).sorted().collect(
+            = this.subnets.stream().map(x -> Graph.getAsList(x).stream().map(Node::getDegree).sorted().collect(
             Collectors.toList())).collect(Collectors.toList());
 
 
         List<List<Integer>> listOfDegreesSecondNet
-            = net.subnets.stream().map(x -> getAsList(x).stream().map(Node::getDegree).sorted().collect(
+            = net.subnets.stream().map(x -> Graph.getAsList(x).stream().map(Node::getDegree).sorted().collect(
             Collectors.toList())).collect(Collectors.toList());
 
         listOfDegrees.retainAll(listOfDegreesSecondNet);

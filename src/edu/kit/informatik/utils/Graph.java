@@ -186,4 +186,21 @@ public final class Graph {
         }
         return list;
     }
+
+   public static List<Node> removeForDuplicates(List<Node> mainNets, List<Node> subNets) {
+        List<Node> noneDuplicates = new ArrayList<>();
+        for (Node subRoot : subNets) {
+
+            boolean duplicate = false;
+            for (Node mainRoot : mainNets) {
+                if (mainRoot.equals(subRoot)) {
+                    duplicate = true;
+                    break;
+                }
+            }
+            if (!duplicate) noneDuplicates.add(subRoot);
+        }
+
+        return noneDuplicates;
+    }
 }
