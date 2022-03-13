@@ -325,7 +325,7 @@ public class Network {
         }
         List<List<IP>> layers = new ArrayList<>();
         layers.add(List.of(Graph.getSubnetRoot(rootNode).getAddress()));
-        for (List<Node> cursor = new ArrayList<>(Graph.getSubnetRoot(rootNode).getChildren()); !cursor.isEmpty(); ) {
+        for (List<Node> cursor = new ArrayList<>(Graph.getSubnetRoot(rootNode).getChildren()); !cursor.isEmpty();) {
             layers.add(cursor.stream().map(Node::getAddress).sorted().collect(Collectors.toList()));
             cursor = cursor.stream().map(Node::getChildren).flatMap(List::stream).collect(Collectors.toList());
         }
